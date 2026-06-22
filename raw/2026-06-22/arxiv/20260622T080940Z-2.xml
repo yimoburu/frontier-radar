@@ -1,0 +1,275 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/eHAqxm8zSzxK/8O9jsLQ+rosGwo</id>
+  <title>arXiv Query: search_query=all:inference OR all:optimization&amp;id_list=&amp;start=0&amp;max_results=10</title>
+  <updated>2026-06-22T08:09:53Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:inference+OR+all:optimization&amp;start=0&amp;max_results=10&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>449487</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20563v1</id>
+    <title>JanusMesh: Fast and Zero-Shot 3D Visual Illusion Generation via Cross-Space Denoising</title>
+    <updated>2026-06-18T17:59:55Z</updated>
+    <link href="https://arxiv.org/abs/2606.20563v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20563v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Creating 3D visual illusions, a single 3D mesh that reveals entirely different semantics from various viewing angles, is a fascinating but tough challenge. Existing optimization-based methods are slow and can produce oversaturated colors. In contrast, naive stitching approaches fail to produce geometrically coherent objects. This results in visible unnatural seams and semantic leaks. In this paper, we present a fast and training-free framework for generating text-driven 3D visual illusions. Our approach decouples the generation into two stages. First, we propose a cross-space dual-branch denoising process. This process dynamically decodes 3D latents into voxel space for CLIP-guided orientation alignment and Signed Distance Field (SDF) blending, which ensures seamless geometric fusion. Second, we introduce a view-conditioned texture synthesis module that projects and aggregates view-specific 2D diffusion priors onto the fused geometry. Extensive experiments demonstrate that our method generates highly realistic, dual-semantic 3D illusions in just 3-5 minutes. It significantly outperforms existing methods in geometric integrity, semantic recognizability, and efficiency. Project page: https://siang1105.github.io/JanusMesh.github.io/</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:59:55Z</published>
+    <arxiv:comment>ECCV 2026. Project page: https://siang1105.github.io/JanusMesh.github.io/</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Siang-Ling Zhang</name>
+    </author>
+    <author>
+      <name>Huai-Hsun Cheng</name>
+    </author>
+    <author>
+      <name>Tsung-Ju Yang</name>
+    </author>
+    <author>
+      <name>Yu-Lun Liu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20562v1</id>
+    <title>MemoryWAM: Efficient World Action Modeling with Persistent Memory</title>
+    <updated>2026-06-18T17:59:51Z</updated>
+    <link href="https://arxiv.org/abs/2606.20562v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20562v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Robust robotic manipulation in the real world requires not only an understanding of the current observation, but also memory and dynamics modeling. World action models (WAMs) possess these capabilities by jointly modeling visual foresight and actions conditioned on both current and historical observations, making them a promising paradigm for robotic manipulation. However, existing WAMs face a fundamental trade-off: methods with efficient inference typically condition only on a bounded window of recent observations and therefore struggle in non-Markovian environments, whereas methods that preserve long histories incur time and space costs that grow substantially with sequence length. To address this challenge, we introduce MemoryWAM, a world action model with efficient persistent memory. MemoryWAM uses a hybrid memory design that combines recent frames, event-boundary anchor frames, and compact gist tokens that summarize long-range history. A tailored attention mechanism enables retrieval of both detailed short-term context and compressed long-term context, supporting memory-dependent decision-making with reduced inference latency and GPU memory usage. Across long-horizon, memory-dependent manipulation tasks in both simulation and the real world, MemoryWAM outperforms strong vision-language-action (VLA) and WAM baselines while maintaining favorable computational efficiency.</summary>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:59:51Z</published>
+    <arxiv:primary_category term="cs.RO"/>
+    <author>
+      <name>Sizhe Yang</name>
+    </author>
+    <author>
+      <name>Juncheng Mu</name>
+    </author>
+    <author>
+      <name>Tianming Wei</name>
+    </author>
+    <author>
+      <name>Chenhao Lu</name>
+    </author>
+    <author>
+      <name>Xiaofan Li</name>
+    </author>
+    <author>
+      <name>Linning Xu</name>
+    </author>
+    <author>
+      <name>Zhengrong Xue</name>
+    </author>
+    <author>
+      <name>Zhecheng Yuan</name>
+    </author>
+    <author>
+      <name>Dahua Lin</name>
+    </author>
+    <author>
+      <name>Jiangmiao Pang</name>
+    </author>
+    <author>
+      <name>Huazhe Xu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20561v1</id>
+    <title>TimeProVe: Propose, then Verify for Efficient Long Video Temporal Reasoning in Activities of Daily Living</title>
+    <updated>2026-06-18T17:59:48Z</updated>
+    <link href="https://arxiv.org/abs/2606.20561v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20561v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Long Video Question Answering (LVQA) requires identifying sparse, query-relevant evidence within hours-long untrimmed videos. Existing approaches either process videos densely with large vision-language models (VLMs), incurring prohibitive computational cost, or rely on sparse caption-based reasoning, which often misses temporally localized and motion-centric evidence. We introduce TimeProVe, a cost-efficient hybrid framework for temporally grounded reasoning in long videos. TimeProVe first employs lightweight modules to generate action-grounded answer--evidence hypotheses and subsequently invokes an expensive VLM only for targeted verification. The core of our framework lies in the Action-based Candidate Evidence (ACE) module, which converts temporally localized actions into query-conditioned candidate answers and supporting evidence windows through lightweight LLM reasoning. We further introduce OpenTSUBench (OTB), an open-ended benchmark designed to evaluate temporally grounded reasoning in real-world Activities of Daily Living (ADL) scenarios. Experiments show that TimeProVe outperforms the strongest baseline on OTB by 7.3%, while reducing VLM calls by 75% and inference cost by 93%. Furthermore, without explicit temporal grounding training, TimeProVe achieves competitive performance on Charades-STA, and reaches state-of-the-art results when enhanced with grounding VLMs.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:59:48Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Arkaprava Sinha</name>
+    </author>
+    <author>
+      <name>Dominick Reilly</name>
+    </author>
+    <author>
+      <name>Siddharth Krishnan</name>
+    </author>
+    <author>
+      <name>Hieu Le</name>
+    </author>
+    <author>
+      <name>Srijan Das</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20557v1</id>
+    <title>Optimal Deterministic Multicalibration and Omniprediction</title>
+    <updated>2026-06-18T17:59:31Z</updated>
+    <link href="https://arxiv.org/abs/2606.20557v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20557v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>A model is multicalibrated on a collection of group weights $G$ if it is calibrated -- i.e. unbiased even conditional on its prediction -- not just overall, but also after reweighting contexts by each $g \in G$. It is a useful property for many downstream applications and is a basic desideratum of trustworthy machine learning. Before this work, all predictors known to attain the minimax-optimal $\widetilde O(\varepsilon^{-3})$ sample complexity rate for $\varepsilon$-multicalibration were randomized, while deterministic predictors were known only with substantially worse sample complexity. Whether randomization is necessary for optimal sample complexity in multicalibration was explicitly asked by [CLNR26] and implicitly in several prior works.
+  We resolve this open problem by giving a minimax-optimal multicalibration algorithm that outputs a deterministic predictor. We then generalize the algorithm to produce optimal deterministic predictors that satisfy outcome indistinguishability (OI) with respect to finite or finitely covered collections of tests. As an application, this also gives deterministic omnipredictors and panpredictors with optimal sample complexity, resolving open problems posed by [OKK25] and [BHHLZ25].</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.ST" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:59:31Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Georgy Noarov</name>
+    </author>
+    <author>
+      <name>Aaron Roth</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20553v1</id>
+    <title>From Efficiency to Leakage -- Privacy Backdoor in Federated Language Model Fine-Tuning</title>
+    <updated>2026-06-18T17:58:25Z</updated>
+    <link href="https://arxiv.org/abs/2606.20553v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20553v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Federated learning (FL) enables multiple parties to collaboratively fine-tune language models for domain-specific tasks without sharing raw data. Since full model fine-tuning is often prohibitively expensive for FL clients, parameter-efficient fine-tuning (PEFT) has become the de facto approach in practice, freezing the base model and training only a small set of adapters. In this paper, we show that a malicious parameter server can stealthily corrupt a PEFT adapter into a privacy backdoor that implicitly memorizes the client's training samples as isolated per-sample parameter updates stored in separate neurons, without degrading model utility. Concretely, our attack, NeuroImprint, assigns a dedicated memorization neuron to each training sample and constrains that each neuron is updated at most once along the local fine-tuning trajectory. This design mitigates both cross-sample collisions and cross-step mixing introduced by large local batches and stateful optimizers (e.g., Adam/AdamW) in language-model fine-tuning. After fine-tuning, the resulting isolated per-sample updates can be analytically inverted in closed form to recover text embeddings, which are then deterministically mapped back to token sequences. To understand the generality of our method, we implemented NeuroImprint on multiple language models (BERT, GPT-2, Qwen2, and Llama3.2) and evaluated it across four fine-tuning datasets spanning diverse domains. The results demonstrate that our attack can reconstruct 59% to 79% of all finetuning samples with high semantic fidelity.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:58:25Z</published>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Shanghao Shi</name>
+    </author>
+    <author>
+      <name>Chaoyu Zhang</name>
+    </author>
+    <author>
+      <name>Heng Jin</name>
+    </author>
+    <author>
+      <name>Yang Xiao</name>
+    </author>
+    <author>
+      <name>Yevgeniy Vorobeychik</name>
+    </author>
+    <author>
+      <name>William Yeoh</name>
+    </author>
+    <author>
+      <name>Ning Zhang</name>
+    </author>
+    <author>
+      <name>Y. Thomas Hou</name>
+    </author>
+    <author>
+      <name>Wenjing Lou</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20551v1</id>
+    <title>Benchmark of quantum algorithms for ground state preparation in the presence of noise</title>
+    <updated>2026-06-18T17:57:56Z</updated>
+    <link href="https://arxiv.org/abs/2606.20551v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20551v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We compare the performance of representative cooling, adiabatic, and optimization algorithms for ground-state preparation in the presence of noise. Using an exactly solvable family of quadratic fermionic Hamiltonians subject to depolarizing noise, we derive the scaling of the achievable relative energy as a function of the noise rate and support these results with numerical simulations. The Hamiltonian exhibits two phases, separated by a quantum phase transition. As expected, the performance of the different algorithms depends on the phase: adiabatic evolution is favorable in the trivial phase, while a multi-frequency cooling algorithm, as proposed in [1], becomes competitive or superior in the topological phase, where gap-closing limits adiabatic protocols. We further present numerical results for the quantum approximate optimization algorithm [2], showing that it performs competitively with cooling in the trivial phase but is typically outperformed in the topological regime. Finally, we show that for this model the cooling protocol exhibits enhanced robustness to parameter imperfections, highlighting its potential advantage for realistic implementations of noisy quantum state preparation.
+  The analytical approach developed here, in conjunction with numerical validation, establishes an extendable approach to benchmarking ground-state preparation algorithms.</summary>
+    <category term="quant-ph" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:57:56Z</published>
+    <arxiv:comment>14+12 pages, 11 figures</arxiv:comment>
+    <arxiv:primary_category term="quant-ph"/>
+    <author>
+      <name>Daniel Molpeceres</name>
+    </author>
+    <author>
+      <name>Sirui Lu</name>
+    </author>
+    <author>
+      <name>J. Ignacio Cirac</name>
+    </author>
+    <author>
+      <name>Barbara Kraus</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20549v1</id>
+    <title>Generating Robot Hands from Human Demonstrations</title>
+    <updated>2026-06-18T17:57:21Z</updated>
+    <link href="https://arxiv.org/abs/2606.20549v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20549v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Robot learning has advanced rapidly in learning control, but learning the physical body of a robot remains much more difficult because jointly searching over design and control creates a very large combinatorial problem. Here, we present a data-driven framework for generating robot hands from human demonstrations. Instead of learning a complex controller together with each candidate design, we generate robot hand designs using the same simple control policy used after fabrication: matching fingertip positions through inverse kinematics. Using more than 4 million frames of human fingertip motion from everyday manipulation, our algorithm optimizes tree-structured robot hands to reproduce desired target motions. The framework produced both a 6-degree-of-freedom (DoF) general-purpose hand and lower-DoF task-specific hands with spatial four-bar mimic joints. To accelerate the search over designs, we trained a reinforcement-learning (RL) actor to propose good hand designs and joint angles, reducing search time from hours to minutes. We fabricated the mechanisms directly as one-piece articulated structures with print-in-place joints. In real-world experiments, the 6-DoF hand achieved highly accurate teleoperated fingertip tracking better than available commercial robot hands, whereas the specialized 3-DoF hands reproduced structured human and synthetic trajectories with reduced mechanical complexity. These results showed that large-scale human motion data can be used not only to train robot controllers but also as a reference for optimizing and generating the physical embodiment of robots.</summary>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:57:21Z</published>
+    <arxiv:primary_category term="cs.RO"/>
+    <author>
+      <name>Sha Yi</name>
+    </author>
+    <author>
+      <name>Nicklas Hansen</name>
+    </author>
+    <author>
+      <name>Xueqian Bai</name>
+    </author>
+    <author>
+      <name>Carmelo Sferrazza</name>
+    </author>
+    <author>
+      <name>Michael T. Tolley</name>
+    </author>
+    <author>
+      <name>Xiaolong Wang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20546v1</id>
+    <title>Predictability as a Fine-Grained Measure for Privacy</title>
+    <updated>2026-06-18T17:55:31Z</updated>
+    <link href="https://arxiv.org/abs/2606.20546v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20546v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Differential privacy (DP) ensures rigorous individual-level privacy guarantees against even the most knowledgeable attackers, but its worst-case nature can impose a costly privacy-accuracy tradeoff. We introduce privacy via predictability, a fine-grained framework that explicitly incorporates the attacker's core knowledge, a compromised portion of the dataset generated by a stochastic process, and a specified family of queries. Predictability measures privacy leakage as the incremental gain in an attacker's ability to predict sensitive information about unknown individuals after observing the algorithm's output, beyond what can already be inferred from the compromised data. We show that predictability and DP are generally incomparable: each can be small while the other is large. However, in the worst-case regime where all but one individual is compromised, and all binary queries are considered sensitive, predictability implies mutual-information DP. More generally, predictability provides a finer-grained privacy metric tailored to specific sensitive information and specific attacker models. We introduce a general framework, using the generalized method of moments (GMM), to analyze asymptotic predictability when the compromised data is generated by a stationary, ergodic, mixing process. Using this analysis, we derive a predictability-calibrated output perturbation scheme for ERM. Our approach is complementary to DP and can be used alongside DP to provide fine-grained privacy control.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:55:31Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Linda Lu</name>
+    </author>
+    <author>
+      <name>Karthik Sridharan</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20543v1</id>
+    <title>SSD: Spatially Speculative Decoding Accelerates Autoregressive Image Generation</title>
+    <updated>2026-06-18T17:52:30Z</updated>
+    <link href="https://arxiv.org/abs/2606.20543v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20543v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Autoregressive models excel in visual generation by treating images as 1D sequences of discrete tokens, mirroring language modeling. However, this flattening discards the intrinsic 2D spatial locality of visual signals, creating severe computational bottlenecks during inference. We introduce Spatially Speculative Decoding (SSD), a framework that aligns the predictive objective with the natural geometry of images. Rather than predicting only the immediate next token in a 1D sequence, our model simultaneously predicts the adjacent horizontal token and the token directly below it. By capitalizing on this 2D spatial correlation, spatially speculative decoding overcomes the memory wall in visual inference. Our approach accelerates autoregressive image generation by up to 13.3x while maintaining high fidelity on DPG-Bench and GenEval. Our results suggest that respecting the underlying geometry of vision unlocks massive computational efficiencies, paving the way for real-time, high-resolution autoregressive generative models.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:52:30Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Shilong Xiang</name>
+    </author>
+    <author>
+      <name>Zirui Zhang</name>
+    </author>
+    <author>
+      <name>Lijun Yu</name>
+    </author>
+    <author>
+      <name>Chengzhi Mao</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.20539v1</id>
+    <title>Caching for Dollars, Not Hits: An Exact Offline Reference for Cloud-Egress Caching and the Crossover That Decides When It Pays</title>
+    <updated>2026-06-18T17:51:45Z</updated>
+    <link href="https://arxiv.org/abs/2606.20539v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.20539v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>When a cache miss fetches from cloud object storage, the bill is per GET request and per byte of egress, not latency. Classic caching minimizes the miss rate, the wrong objective: a rarely but expensively fetched object can cost thousands of times more dollars than a frequently but cheaply fetched one. Generalized-caching theory bounds the miss-cost objective, but no reported benchmark measures how far deployed heuristics sit from the dollar-optimal offline policy on real cloud prices. We supply that reference. For uniform-size page caches with heterogeneous miss costs the offline dollar-optimum is exact in polynomial time via an integral interval linear program -- validated against brute force; variable sizes are NP-hard, so we extend the flow-based offline bound from the hit-ratio objective to dollars (cost-FOO), tight to about four percent. Against this reference we find: (i) a heterogeneity-regret law -- LRU's dollar-regret rises with miss-cost dispersion (Spearman 0.87) while cost-aware GreedyDual cuts it to roughly a tenth; (ii) a contention frontier -- GreedyDual's residual regret collapses to near zero exactly when the budget fits the expensive working set, and is the open slice otherwise; and (iii) a closed-form crossover s* = GET_fee/egress_rate (about 4 KB on S3, 330 B on GCS) that predicts which deployments need dollar-aware caching at all. On a real Twitter trace the price vector alone moves the workload across s*, shifting the regime as predicted. The artifact is a reproducible billing-faithful benchmark; heuristics and bounds it builds on are prior work, credited.</summary>
+    <category term="cs.DB" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DS" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-18T17:51:45Z</published>
+    <arxiv:comment>6 pages, 3 figures. Code, benchmarks, and full pre-registration: https://github.com/samyama-ai/cloud-egress-cache</arxiv:comment>
+    <arxiv:primary_category term="cs.DB"/>
+    <author>
+      <name>Madhulatha Mandarapu</name>
+    </author>
+    <author>
+      <name>Sandeep Kunkunuru</name>
+    </author>
+  </entry>
+</feed>
