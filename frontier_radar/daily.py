@@ -115,7 +115,7 @@ def collect_all(
 
 
 def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> DailyResult:
-    root = Path(root)
+    root = Path(root).resolve()
     started_at = now or utc_now_iso()
     config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
     db = Database(root / "state" / "frontier-radar.sqlite")
