@@ -21,6 +21,15 @@ The chat command answers from matching wiki pages, records a transcript under `w
 and updates `wiki/user-profile.md` with explanation-level and interest signals so future
 wiki work can speak closer to the user's current context.
 
+Start a local web control panel:
+
+```bash
+frontier-radar serve
+```
+
+Then open `http://127.0.0.1:8765/` to run daily, fetch, rank, digest, wiki lint, health, and chat actions from the browser.
+Use the browser's Stop Server button, press `Ctrl-C` in the terminal, or run `frontier-radar serve --stop` from another terminal to stop it.
+
 ## Knowledge Layout
 
 - `raw/`: ignored local source snapshots.

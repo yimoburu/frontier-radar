@@ -90,6 +90,8 @@ def _lint_provenance_paths(root: Path, path: Path, text: str) -> list[str]:
         if relative_path.is_absolute() or ".." in relative_path.parts:
             errors.append(f"{path.relative_to(root)} unsafe provenance path: {value}")
             continue
+        if _is_raw_provenance_path(relative_path):
+            continue
         if not (root / relative_path).exists():
             errors.append(f"{path.relative_to(root)} missing provenance path: {value}")
     return errors
@@ -98,3 +100,7 @@ def _lint_provenance_paths(root: Path, path: Path, text: str) -> list[str]:
 def _is_external_link(value: str) -> bool:
     lowered = value.casefold()
     return lowered.startswith(("http://", "https://", "mailto:"))
+
+
+def _is_raw_provenance_path(value: Path) -> bool:
+    return bool(value.parts) and value.parts[0] == "raw"
