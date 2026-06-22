@@ -38,3 +38,21 @@ def test_readme_daily_schedule_does_not_name_a_specific_harness():
     assert "agent automation" in readme
     for provider in ["Codex", "Claude Code", "OpenCode", "Gemini CLI", "Cursor"]:
         assert provider not in readme
+
+
+def test_blueprint_docs_do_not_preserve_codex_automation_path():
+    root = Path(__file__).resolve().parents[1]
+    checked_paths = [
+        "docs/superpowers/specs/2026-06-22-frontier-radar-design.md",
+        "docs/superpowers/plans/2026-06-22-frontier-radar.md",
+    ]
+    forbidden_phrases = [
+        "Codex app automation",
+        "Codex automation",
+        "Codex daily automation",
+    ]
+
+    for relative in checked_paths:
+        text = (root / relative).read_text(encoding="utf-8")
+        for phrase in forbidden_phrases:
+            assert phrase not in text, f"{relative} contains {phrase!r}"

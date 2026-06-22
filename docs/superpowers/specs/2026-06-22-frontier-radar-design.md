@@ -242,7 +242,7 @@ Phase 2 implements deterministic normalization, storage, ranking, and digest ren
 
 Phase 3 adds public collectors for GitHub, arXiv, Hacker News, YouTube RSS, curated RSS, and manual notes.
 
-Phase 4 adds wiki linting, scheduler examples, and the optional Codex daily automation.
+Phase 4 adds wiki linting, scheduler examples, and optional agent automation guidance.
 
 ## V1 Decisions
 
