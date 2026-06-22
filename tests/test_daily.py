@@ -29,6 +29,58 @@ def test_run_daily_writes_digest_with_fixture_items(tmp_path):
     assert "agent memory notes" in (tmp_path / result.digest_path).read_text(encoding="utf-8")
 
 
+def test_run_daily_uses_configured_llm_brief(tmp_path, monkeypatch):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sources.yaml").write_text(
+        "manual:\n  enabled: true\n  directory: manual\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "topics.yaml").write_text(
+        "topics:\n  agents:\n    keywords: ['agent']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "llm.yaml").write_text(
+        "enabled: true\n"
+        "provider: openai-compatible\n"
+        "base_url: https://llm.example/v1\n"
+        "model: frontier-synth\n"
+        "api_key_env: TEST_LLM_KEY\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "manual").mkdir()
+    (tmp_path / "manual" / "x-notes.md").write_text(
+        "- 2026-06-22 | Expert | https://x.com/example/status/llm | agent synthesis note\n",
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def fake_synthesize(ranked_items, settings):
+        captured["api_key"] = settings.api_key
+        captured["titles"] = [entry.item.title for entry in ranked_items]
+        return type(
+            "Result",
+            (),
+            {
+                "used_llm": True,
+                "lines": [
+                    "- LLM synthesis: agent notes should become a wiki claim. Provenance: `manual/x-notes.md`"
+                ],
+                "error": "",
+            },
+        )()
+
+    monkeypatch.setenv("TEST_LLM_KEY", "secret")
+    monkeypatch.setattr("frontier_radar.daily.synthesize_daily_brief", fake_synthesize)
+
+    result = run_daily(tmp_path, now="2026-06-22T15:00:00+00:00", live_network=False)
+
+    digest = (tmp_path / result.digest_path).read_text(encoding="utf-8")
+    assert result.status == "ok"
+    assert captured["api_key"] == "secret"
+    assert captured["titles"] == ["agent synthesis note"]
+    assert "LLM synthesis: agent notes should become a wiki claim" in digest
+
+
 def test_run_daily_resolves_relative_root_from_cwd(tmp_path, monkeypatch):
     root = tmp_path / "relroot"
     (root / "config").mkdir(parents=True)

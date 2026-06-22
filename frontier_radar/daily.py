@@ -11,6 +11,7 @@ from frontier_radar.collectors.hn import collect_hn
 from frontier_radar.collectors.manual import collect_manual_notes
 from frontier_radar.collectors.rss import collect_rss
 from frontier_radar.config import effective_job_config, load_app_config, load_jobs_config
+from frontier_radar.llm import load_llm_settings, synthesize_daily_brief
 from frontier_radar.models import NormalizedItem
 from frontier_radar.ranking import RankedItem, rank_items
 from frontier_radar.raw import RawStore
@@ -279,7 +280,15 @@ def run_daily(
             limit=int(effective_config["top_n"]),
             seen_item_ids=seen_item_ids,
         )
-        digest_path = write_daily_digest(root, started_at[:10], ranked, counts, errors)
+        intelligence_brief = _synthesize_intelligence_brief(root, ranked, errors)
+        digest_path = write_daily_digest(
+            root,
+            started_at[:10],
+            ranked,
+            counts,
+            errors,
+            intelligence_brief=intelligence_brief,
+        )
     except Exception as exc:
         errors.append(f"daily pipeline: {exc}")
         source_statuses = _source_statuses(config.sources, counts, errors)
@@ -330,6 +339,22 @@ def _status(items: list[NormalizedItem], errors: list[str]) -> str:
     if items:
         return "partial"
     return "error"
+
+
+def _synthesize_intelligence_brief(
+    root: Path,
+    ranked: list[RankedItem],
+    errors: list[str],
+) -> list[str] | None:
+    try:
+        settings = load_llm_settings(root / "config" / "llm.yaml")
+    except Exception as exc:
+        errors.append(f"llm synthesis: {exc}")
+        return None
+    result = synthesize_daily_brief(ranked, settings)
+    if result.error:
+        errors.append(result.error)
+    return result.lines
 
 
 def _dedupe_items(items: list[NormalizedItem]) -> list[NormalizedItem]:

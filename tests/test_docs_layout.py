@@ -67,6 +67,16 @@ def test_readme_daily_schedule_does_not_name_a_specific_harness():
         assert provider not in readme
 
 
+def test_llm_synthesis_is_documented_as_opt_in():
+    root = Path(__file__).resolve().parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    llm_config = (root / "config" / "llm.yaml").read_text(encoding="utf-8")
+
+    assert "LLM synthesis is opt-in" in readme
+    assert "frontier-radar daily works without an LLM key" in readme
+    assert "enabled: false" in llm_config
+
+
 def test_blueprint_docs_do_not_preserve_codex_automation_path():
     root = Path(__file__).resolve().parents[1]
     checked_paths = [
