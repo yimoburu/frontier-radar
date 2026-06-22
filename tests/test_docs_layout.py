@@ -27,6 +27,9 @@ def test_scheduler_docs_are_harness_agnostic():
 
     assert "frontier-radar daily" in cron
     assert "frontier-radar daily" in automation
+    assert "frontier-radar retry-failed" in automation
+    assert "frontier-radar enrich" in automation
+    assert "frontier-radar health" in automation
     assert "America/Los_Angeles" in automation
     assert not (root / "docs/scheduling/codex.md").exists()
 

@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
 from frontier_radar.daily import fetch_once, run_daily, utc_now_iso
+from frontier_radar.jobs import run_enrich, run_health, run_retry_failed, run_state_vacuum
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
 from frontier_radar.wiki.lint import lint_wiki
@@ -21,9 +22,36 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "daily":
-            result = run_daily(root)
+            result = run_daily(root, budget_minutes=args.budget_minutes, top_n=args.top_n)
             _print_daily_result("Frontier Radar", result)
             return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "retry-failed":
+            result = run_retry_failed(root, since=args.since, budget_minutes=args.budget_minutes)
+            _print_job_result(result)
+            return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "enrich":
+            result = run_enrich(
+                root,
+                since=args.since,
+                budget_minutes=args.budget_minutes,
+                top_n=args.top_n,
+            )
+            _print_job_result(result)
+            return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "health":
+            result = run_health(root)
+            _print_health_result(result)
+            return 0 if result.status == "ok" else 1
+
+        if args.command == "state" and args.state_command == "vacuum":
+            result = run_state_vacuum(root)
+            print(f"state vacuum {result.status}")
+            for lock in result.cleaned_locks:
+                print(f"- cleaned stale lock: {lock}")
+            return 0 if result.status == "ok" else 1
 
         if args.command == "fetch":
             result = fetch_once(root)
@@ -105,7 +133,25 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", default=".", help="repository root")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("daily", help="run fetch, rank, and digest")
+    daily = sub.add_parser("daily", help="run fetch, rank, and digest")
+    daily.add_argument("--budget-minutes", type=int, default=None)
+    daily.add_argument("--top-n", type=int, default=None)
+
+    retry = sub.add_parser("retry-failed", help="retry failed or partial sources from the latest daily run")
+    retry.add_argument("--since", default=None)
+    retry.add_argument("--budget-minutes", type=int, default=None)
+
+    enrich = sub.add_parser("enrich", help="update long-lived wiki pages from stored evidence")
+    enrich.add_argument("--since", default=None)
+    enrich.add_argument("--budget-minutes", type=int, default=None)
+    enrich.add_argument("--top-n", type=int, default=None)
+
+    sub.add_parser("health", help="report wiki, state, duplicate, and lock health")
+
+    state = sub.add_parser("state", help="state maintenance")
+    state_sub = state.add_subparsers(dest="state_command", required=True)
+    state_sub.add_parser("vacuum", help="vacuum SQLite and clean stale locks")
+
     sub.add_parser("fetch", help="collect sources and update storage")
     sub.add_parser("rank", help="print ranked stored items")
     sub.add_parser("digest", help="write a digest from stored items")
@@ -136,6 +182,24 @@ def _print_fetch_result(result) -> None:
         print(f"- {source}: {count}")
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _print_job_result(result) -> None:
+    print(f"{result.job_type} {result.status}: {result.item_count} new items")
+    for source, count in sorted(result.counts.items()):
+        print(f"- {source}: {count}")
+    for output in result.outputs:
+        print(f"- output: {output}")
+    for error in result.errors:
+        print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _print_health_result(result) -> None:
+    print(f"health {result.status}")
+    for issue in result.issues:
+        print(f"- {issue}")
+    for lock in result.cleaned_locks:
+        print(f"- cleaned stale lock: {lock}")
 
 
 def _check_sources(sources: dict) -> list[str]:

@@ -23,10 +23,19 @@ frontier-radar daily
 The intended daily run is 8:00 AM in America/Los_Angeles:
 
 ```bash
-frontier-radar daily
+frontier-radar daily --budget-minutes 20 --top-n 30
 ```
 
 See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
+
+Reliability jobs:
+
+```bash
+frontier-radar retry-failed --since today --budget-minutes 10
+frontier-radar enrich --since 7d --budget-minutes 60 --top-n 100
+frontier-radar state vacuum
+frontier-radar health
+```
 
 ## Verification
 

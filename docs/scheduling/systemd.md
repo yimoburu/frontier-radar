@@ -11,7 +11,7 @@ Description=Frontier Radar daily digest
 [Service]
 Type=oneshot
 WorkingDirectory=/Users/xwli/Documents/st
-ExecStart=/Users/xwli/Documents/st/.venv/bin/frontier-radar daily
+ExecStart=/Users/xwli/Documents/st/.venv/bin/frontier-radar daily --budget-minutes 20 --top-n 30
 ```
 
 Example `~/.config/systemd/user/frontier-radar.timer`:
@@ -34,3 +34,13 @@ Enable with:
 systemctl --user daemon-reload
 systemctl --user enable --now frontier-radar.timer
 ```
+
+Use separate services/timers for reliability jobs:
+
+```ini
+ExecStart=/Users/xwli/Documents/st/.venv/bin/frontier-radar retry-failed --since today --budget-minutes 10
+ExecStart=/Users/xwli/Documents/st/.venv/bin/frontier-radar enrich --since 7d --budget-minutes 60 --top-n 100
+ExecStart=/Users/xwli/Documents/st/.venv/bin/frontier-radar health
+```
+
+Keep `fetch`, `rank`, and `digest` as manual helper commands. The scheduled jobs should remain purpose-specific so state, locks, and checkpoints stay coordinated.
