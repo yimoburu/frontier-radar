@@ -27,3 +27,13 @@ frontier-radar daily
 ```
 
 See `docs/scheduling/` for cron, launchd, systemd, and Codex app notes.
+
+## Verification
+
+```bash
+python -m pytest -q
+frontier-radar wiki lint
+frontier-radar daily
+```
+
+The daily reminder is configured as an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, Codex, Claude Code, or another harness.
