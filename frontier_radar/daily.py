@@ -11,10 +11,28 @@ from frontier_radar.collectors.manual import collect_manual_notes
 from frontier_radar.collectors.rss import collect_rss
 from frontier_radar.config import load_app_config
 from frontier_radar.models import NormalizedItem
-from frontier_radar.ranking import rank_items
+from frontier_radar.ranking import RankedItem, rank_items
 from frontier_radar.raw import RawStore
 from frontier_radar.storage import Database
 from frontier_radar.wiki.render import write_daily_digest
+
+
+@dataclass(frozen=True)
+class ReviewItem:
+    title: str
+    score: float
+    components: dict[str, float]
+
+
+@dataclass(frozen=True)
+class RunReview:
+    item_count: int
+    new_items: int
+    refreshed_items: int
+    counts: dict[str, int]
+    outputs: list[Path]
+    why: str
+    top_items: list[ReviewItem]
 
 
 @dataclass(frozen=True)
@@ -24,6 +42,7 @@ class DailyResult:
     counts: dict[str, int]
     errors: list[str]
     top_titles: list[str]
+    review: RunReview
 
 
 @dataclass(frozen=True)
@@ -32,6 +51,7 @@ class FetchResult:
     counts: dict[str, int]
     errors: list[str]
     item_count: int
+    review: RunReview
 
 
 def utc_now_iso() -> str:
@@ -132,6 +152,7 @@ def fetch_once(root: Path, now: str | None = None, live_network: bool = True) ->
     config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
     db = Database(root / "state" / "frontier-radar.sqlite")
     db.init()
+    seen_item_ids = db.item_ids()
 
     raw_store = RawStore(root)
     items, counts, errors = collect_all(root, raw_store, config.sources, started_at, live_network)
@@ -146,7 +167,20 @@ def fetch_once(root: Path, now: str | None = None, live_network: bool = True) ->
         errors=errors,
         outputs=[],
     )
-    return FetchResult(status=status, counts=counts, errors=errors, item_count=len(items))
+    return FetchResult(
+        status=status,
+        counts=counts,
+        errors=errors,
+        item_count=len(items),
+        review=_build_review(
+            items=items,
+            counts=counts,
+            seen_item_ids=seen_item_ids,
+            outputs=[],
+            ranked=[],
+            why="fetched enabled sources and upserted normalized items by URL",
+        ),
+    )
 
 
 def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> DailyResult:
@@ -159,8 +193,9 @@ def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> 
     items: list[NormalizedItem] = []
     counts: dict[str, int] = {}
     errors: list[str] = []
-    ranked = []
+    ranked: list[RankedItem] = []
     digest_path = Path("wiki") / "daily" / f"{started_at[:10]}.md"
+    seen_item_ids: set[str] = set()
 
     try:
         seen_item_ids = db.item_ids()
@@ -200,6 +235,14 @@ def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> 
         counts=counts,
         errors=errors,
         top_titles=[entry.item.title for entry in ranked[:5]],
+        review=_build_review(
+            items=items,
+            counts=counts,
+            seen_item_ids=seen_item_ids,
+            outputs=[digest_path],
+            ranked=ranked,
+            why="ranked by freshness, momentum, relevance, novelty, source_weight",
+        ),
     )
 
 
@@ -220,3 +263,31 @@ def _dedupe_items(items: list[NormalizedItem]) -> list[NormalizedItem]:
         seen.add(item.item_id)
         unique.append(item)
     return unique
+
+
+def _build_review(
+    items: list[NormalizedItem],
+    counts: dict[str, int],
+    seen_item_ids: set[str],
+    outputs: list[Path],
+    ranked: list[RankedItem],
+    why: str,
+) -> RunReview:
+    new_items = sum(1 for item in items if item.item_id not in seen_item_ids)
+    refreshed_items = len(items) - new_items
+    return RunReview(
+        item_count=len(items),
+        new_items=new_items,
+        refreshed_items=refreshed_items,
+        counts=dict(counts),
+        outputs=list(outputs),
+        why=why,
+        top_items=[
+            ReviewItem(
+                title=entry.item.title,
+                score=entry.score,
+                components=dict(entry.components),
+            )
+            for entry in ranked[:5]
+        ],
+    )
