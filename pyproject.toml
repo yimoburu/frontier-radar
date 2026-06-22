@@ -16,6 +16,9 @@ test = ["pytest>=8.2"]
 [project.scripts]
 frontier-radar = "frontier_radar.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["frontier_radar*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
