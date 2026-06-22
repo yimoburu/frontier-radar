@@ -4,7 +4,14 @@ from frontier_radar.wiki.render import write_daily_digest
 from test_wiki_render import ranked_item
 
 
+def create_raw_snapshot(root):
+    raw = root / "raw" / "2026-06-22" / "github"
+    raw.mkdir(parents=True)
+    (raw / "item.json").write_text("{}", encoding="utf-8")
+
+
 def test_lint_wiki_accepts_digest_with_provenance(tmp_path):
+    create_raw_snapshot(tmp_path)
     daily = tmp_path / "wiki" / "daily"
     daily.mkdir(parents=True)
     (daily / "2026-06-22.md").write_text(
@@ -35,6 +42,7 @@ def test_lint_wiki_flags_missing_provenance(tmp_path):
 
 
 def test_lint_wiki_accepts_digest_written_by_renderer(tmp_path):
+    create_raw_snapshot(tmp_path)
     write_daily_digest(tmp_path, "2026-06-22", [ranked_item()], {"github": 1}, [])
 
     result = lint_wiki(tmp_path)
@@ -44,6 +52,7 @@ def test_lint_wiki_accepts_digest_written_by_renderer(tmp_path):
 
 
 def test_lint_wiki_accepts_rendered_digest_with_url_error(tmp_path):
+    create_raw_snapshot(tmp_path)
     write_daily_digest(
         tmp_path,
         "2026-06-22",
@@ -59,6 +68,7 @@ def test_lint_wiki_accepts_rendered_digest_with_url_error(tmp_path):
 
 
 def test_lint_wiki_accepts_rendered_digest_with_sanitized_item_url(tmp_path):
+    create_raw_snapshot(tmp_path)
     write_daily_digest(
         tmp_path,
         "2026-06-22",
@@ -79,6 +89,7 @@ def test_lint_wiki_accepts_rendered_digest_with_sanitized_item_url(tmp_path):
 
 
 def test_lint_wiki_accepts_rendered_digest_with_url_summary(tmp_path):
+    create_raw_snapshot(tmp_path)
     write_daily_digest(
         tmp_path,
         "2026-06-22",
@@ -91,3 +102,51 @@ def test_lint_wiki_accepts_rendered_digest_with_url_summary(tmp_path):
 
     assert result.ok is True
     assert result.errors == []
+
+
+def test_lint_wiki_flags_missing_local_link_target(tmp_path):
+    wiki = tmp_path / "wiki"
+    wiki.mkdir()
+    (wiki / "index.md").write_text("[Missing](topics/missing.md)\n", encoding="utf-8")
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is False
+    assert "missing local link target" in result.errors[0]
+
+
+def test_lint_wiki_flags_missing_provenance_path(tmp_path):
+    daily = tmp_path / "wiki" / "daily"
+    daily.mkdir(parents=True)
+    (daily / "2026-06-22.md").write_text(
+        "- [Agent Framework](https://github.com/example/agent-framework) "
+        "(raw: `raw/2026-06-22/github/missing.json`)\n",
+        encoding="utf-8",
+    )
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is False
+    assert "missing provenance path" in result.errors[0]
+
+
+def test_lint_wiki_flags_invalid_daily_filename(tmp_path):
+    daily = tmp_path / "wiki" / "daily"
+    daily.mkdir(parents=True)
+    (daily / "today.md").write_text("# Today\n", encoding="utf-8")
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is False
+    assert "YYYY-MM-DD" in result.errors[0]
+
+
+def test_lint_wiki_flags_bad_log_entry_format(tmp_path):
+    wiki = tmp_path / "wiki"
+    wiki.mkdir()
+    (wiki / "log.md").write_text("# Wiki Log\n\n- changed pages\n", encoding="utf-8")
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is False
+    assert "log entries must start" in result.errors[0]

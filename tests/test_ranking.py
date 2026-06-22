@@ -35,7 +35,35 @@ def test_score_item_combines_freshness_momentum_and_relevance():
     assert scored.components["freshness"] > 0.9
     assert scored.components["momentum"] > 0.0
     assert scored.components["relevance"] == 2.0
-    assert scored.score > 3.0
+    assert scored.components["novelty"] == 1.0
+    assert scored.components["source_weight"] > 0.0
+    assert scored.score > 4.0
+
+
+def test_score_item_marks_seen_items_as_not_novel():
+    topics = {"topics": {"agents": {"keywords": ["agent"]}}}
+    new_item = item("Agent Runtime", "Agent notes", {"stars": 1})
+
+    scored = score_item(
+        new_item,
+        topics,
+        now="2026-06-22T16:00:00+00:00",
+        seen_item_ids={new_item.item_id},
+    )
+
+    assert scored.components["novelty"] == 0.0
+
+
+def test_score_item_handles_invalid_item_timestamp_without_crashing():
+    topics = {"topics": {"agents": {"keywords": ["agent"]}}}
+
+    scored = score_item(
+        item("Agent Runtime", "Agent notes", {"stars": 1}, published_at="not-a-date"),
+        topics,
+        now="2026-06-22T16:00:00+00:00",
+    )
+
+    assert scored.components["freshness"] == 0.0
 
 
 def test_rank_items_returns_highest_scores_first():

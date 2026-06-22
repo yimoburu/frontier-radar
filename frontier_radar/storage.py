@@ -102,6 +102,11 @@ class Database:
 
         return [self._row_to_item(row) for row in rows]
 
+    def item_ids(self) -> set[str]:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT item_id FROM items").fetchall()
+        return {str(row["item_id"]) for row in rows}
+
     def record_run(
         self,
         started_at: str,

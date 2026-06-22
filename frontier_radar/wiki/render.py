@@ -35,6 +35,27 @@ def render_daily_digest(
     else:
         lines.append("- No items collected.")
 
+    lines.extend(["", "## Top Repositories", ""])
+    lines.extend(_compact_item_lines(_filter_items(ranked_items, source_type="repo")))
+
+    lines.extend(["", "## Top Papers", ""])
+    lines.extend(_compact_item_lines(_filter_items(ranked_items, source_type="paper")))
+
+    lines.extend(["", "## Top Discussions", ""])
+    lines.extend(_compact_item_lines(_filter_items(ranked_items, source_type="discussion")))
+
+    lines.extend(["", "## Top Videos Or Talks", ""])
+    lines.extend(_compact_item_lines(_video_items(ranked_items)))
+
+    lines.extend(["", "## Emerging Topics", ""])
+    lines.extend(_emerging_topic_lines(ranked_items))
+
+    lines.extend(["", "## Claims To Revisit", ""])
+    lines.extend(_claims_to_revisit_lines(ranked_items))
+
+    lines.extend(["", "## Suggested Wiki Pages", ""])
+    lines.extend(_suggested_page_lines(ranked_items))
+
     lines.extend(["", "## Top Items", ""])
     for entry in ranked_items:
         title = _inline_text(entry.item.title)
@@ -115,3 +136,86 @@ def _markdown_url(value: str) -> str:
 
 def _error_text(value: str) -> str:
     return _inline_text(value).replace("https://", "hxxps://").replace("http://", "hxxp://")
+
+
+def _filter_items(
+    ranked_items: list[RankedItem],
+    source_type: str,
+    limit: int = 5,
+) -> list[RankedItem]:
+    return [entry for entry in ranked_items if entry.item.source_type == source_type][:limit]
+
+
+def _video_items(ranked_items: list[RankedItem], limit: int = 5) -> list[RankedItem]:
+    return [
+        entry
+        for entry in ranked_items
+        if entry.item.source == "youtube"
+        or "video" in entry.item.source_type.casefold()
+        or "talk" in " ".join(entry.item.tags).casefold()
+    ][:limit]
+
+
+def _compact_item_lines(entries: list[RankedItem]) -> list[str]:
+    if not entries:
+        return ["- None captured in this run."]
+    lines: list[str] = []
+    for entry in entries:
+        title = _markdown_link_text(entry.item.title)
+        url = _markdown_url(entry.item.url)
+        raw_path = _inline_text(entry.item.raw_path)
+        lines.append(f"- [{title}]({url}) (score {entry.score:.2f}; raw: `{raw_path}`)")
+    return lines
+
+
+def _emerging_topic_lines(ranked_items: list[RankedItem]) -> list[str]:
+    counts: dict[str, int] = {}
+    for entry in ranked_items:
+        for tag in entry.item.tags:
+            label = _inline_text(tag)
+            if label:
+                counts[label] = counts.get(label, 0) + 1
+    if not counts:
+        return ["- None detected yet."]
+    return [f"- {topic}: {count} item(s)" for topic, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:10]]
+
+
+def _claims_to_revisit_lines(ranked_items: list[RankedItem]) -> list[str]:
+    claim_like = [
+        entry
+        for entry in ranked_items
+        if entry.item.source_type in {"expert-note", "paper", "feed"}
+        and any(word in entry.item.summary.casefold() for word in ["claim", "benchmark", "sota", "state-of-the-art", "outperform"])
+    ][:5]
+    if not claim_like:
+        return ["- None flagged by the current heuristic."]
+    return _compact_item_lines(claim_like)
+
+
+def _suggested_page_lines(ranked_items: list[RankedItem]) -> list[str]:
+    if not ranked_items:
+        return ["- None."]
+    lines: list[str] = []
+    for entry in ranked_items[:10]:
+        page = _suggested_page(entry)
+        title = _markdown_link_text(entry.item.title)
+        url = _markdown_url(entry.item.url)
+        raw_path = _inline_text(entry.item.raw_path)
+        lines.append(f"- `{page}` from [{title}]({url}) (raw: `{raw_path}`)")
+    return lines
+
+
+def _suggested_page(entry: RankedItem) -> str:
+    title = _slug(entry.item.title)
+    if entry.item.source_type == "repo":
+        return f"wiki/repos/{title}.md"
+    if entry.item.source_type == "paper":
+        return f"wiki/papers/{title}.md"
+    if entry.item.source_type == "expert-note":
+        return f"wiki/claims/{title}.md"
+    return f"wiki/topics/{title}.md"
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", _inline_text(value).casefold()).strip("-")
+    return slug[:80] or "untitled"

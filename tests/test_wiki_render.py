@@ -44,6 +44,13 @@ def test_render_daily_digest_includes_provenance_and_scores():
     assert "Agent Framework" in markdown
     assert "raw/2026-06-22/github/item.json" in markdown
     assert "score 5.50" in markdown
+    assert "## Top Repositories" in markdown
+    assert "## Top Papers" in markdown
+    assert "## Top Discussions" in markdown
+    assert "## Top Videos Or Talks" in markdown
+    assert "## Emerging Topics" in markdown
+    assert "## Claims To Revisit" in markdown
+    assert "## Suggested Wiki Pages" in markdown
 
 
 def test_write_daily_digest_creates_expected_path(tmp_path):

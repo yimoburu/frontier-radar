@@ -11,6 +11,14 @@ from frontier_radar.models import NormalizedItem
 
 MOMENTUM_KEYS = ("stars", "points", "comments", "score", "views")
 FRESHNESS_WINDOW_HOURS = 168
+DEFAULT_SOURCE_WEIGHTS = {
+    "manual": 1.5,
+    "arxiv": 1.3,
+    "rss": 1.2,
+    "youtube": 1.2,
+    "github": 1.1,
+    "hn": 1.0,
+}
 
 
 @dataclass(frozen=True)
@@ -32,7 +40,10 @@ def parse_time(value: str) -> datetime:
 
 
 def freshness_score(published_at: str, now: str | datetime | None = None) -> float:
-    published = parse_time(published_at)
+    try:
+        published = parse_time(published_at)
+    except (TypeError, ValueError):
+        return 0.0
     current = _coerce_now(now)
     age_hours = max(0.0, (current - published).total_seconds() / 3600)
     return max(0.0, 1.0 - (age_hours / FRESHNESS_WINDOW_HOURS))
@@ -55,15 +66,30 @@ def relevance_score(item: NormalizedItem, topics: dict[str, Any]) -> float:
     return float(hits)
 
 
+def novelty_score(item: NormalizedItem, seen_item_ids: set[str] | None = None) -> float:
+    if seen_item_ids is None:
+        return 1.0
+    return 0.0 if item.item_id in seen_item_ids else 2.0
+
+
+def source_weight_score(item: NormalizedItem, topics: dict[str, Any]) -> float:
+    weights = dict(DEFAULT_SOURCE_WEIGHTS)
+    weights.update(topics.get("source_weights", {}))
+    return float(weights.get(item.source, 1.0))
+
+
 def score_item(
     item: NormalizedItem,
     topics: dict[str, Any],
     now: str | datetime | None = None,
+    seen_item_ids: set[str] | None = None,
 ) -> RankedItem:
     components = {
         "freshness": freshness_score(item.published_at, now=now),
         "momentum": momentum_score(item.metrics),
         "relevance": relevance_score(item, topics),
+        "novelty": novelty_score(item, seen_item_ids),
+        "source_weight": source_weight_score(item, topics),
     }
     return RankedItem(item=item, score=sum(components.values()), components=components)
 
@@ -73,8 +99,9 @@ def rank_items(
     topics: dict[str, Any],
     now: str | datetime | None = None,
     limit: int | None = None,
+    seen_item_ids: set[str] | None = None,
 ) -> list[RankedItem]:
-    ranked = [score_item(item, topics, now=now) for item in items]
+    ranked = [score_item(item, topics, now=now, seen_item_ids=seen_item_ids) for item in items]
     ranked.sort(key=lambda scored: (-scored.score, scored.item.title, scored.item.url))
     if limit is None:
         return ranked

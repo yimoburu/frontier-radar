@@ -109,6 +109,23 @@ def test_collect_manual_notes_reads_markdown_links(tmp_path):
     assert "LLM wiki memory" in items[0].summary
 
 
+def test_collect_manual_notes_records_invalid_dates_and_continues(tmp_path):
+    manual = tmp_path / "manual"
+    manual.mkdir()
+    (manual / "x-notes.md").write_text(
+        "- not-a-date | Bad Author | https://example.com/bad | Bad note\n"
+        "- 2026-06-22 | Good Author | https://example.com/good | Good agent note\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    items = collect_manual_notes(tmp_path, "manual", errors=errors)
+
+    assert [item.url for item in items] == ["https://example.com/good"]
+    assert len(errors) == 1
+    assert "invalid date" in errors[0]
+
+
 def test_collect_manual_notes_rejects_directory_traversal(tmp_path):
     outside = tmp_path.parent / "outside"
     outside.mkdir(exist_ok=True)

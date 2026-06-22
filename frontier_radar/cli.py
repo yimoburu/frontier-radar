@@ -4,8 +4,9 @@ import argparse
 from pathlib import Path
 import sys
 
+from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
-from frontier_radar.daily import run_daily, utc_now_iso
+from frontier_radar.daily import fetch_once, run_daily, utc_now_iso
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
 from frontier_radar.wiki.lint import lint_wiki
@@ -24,15 +25,21 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if result.status in {"ok", "partial"} else 1
 
         if args.command == "fetch":
-            result = run_daily(root)
-            _print_daily_result("Fetched and wrote digest", result)
+            result = fetch_once(root)
+            _print_fetch_result(result)
             return 0 if result.status in {"ok", "partial"} else 1
 
         if args.command == "rank":
             config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
             db = Database(root / "state" / "frontier-radar.sqlite")
             db.init()
-            ranked = rank_items(db.list_items(), config.topics, now=utc_now_iso(), limit=20)
+            ranked = rank_items(
+                db.list_items(),
+                config.topics,
+                now=utc_now_iso(),
+                limit=20,
+                seen_item_ids=set(),
+            )
             for entry in ranked:
                 print(f"{entry.score:.2f}\t{entry.item.title}\t{entry.item.url}")
             return 0
@@ -42,8 +49,21 @@ def main(argv: list[str] | None = None) -> int:
             db = Database(root / "state" / "frontier-radar.sqlite")
             db.init()
             now = utc_now_iso()
-            ranked = rank_items(db.list_items(), config.topics, now=now, limit=20)
-            path = write_daily_digest(root, now[:10], ranked, {}, [])
+            latest_run = db.latest_run() or {"counts": {}, "errors": []}
+            ranked = rank_items(
+                db.list_items(),
+                config.topics,
+                now=now,
+                limit=20,
+                seen_item_ids=set(),
+            )
+            path = write_daily_digest(
+                root,
+                now[:10],
+                ranked,
+                latest_run["counts"],
+                latest_run["errors"],
+            )
             print(f"Wrote {path}")
             return 0
 
@@ -55,7 +75,12 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"{name}\t{state}")
                 return 0
             if args.sources_command == "check":
-                print("Source configuration loaded")
+                errors = _check_sources(config.sources)
+                if errors:
+                    for error in errors:
+                        print(f"ERROR: {error}", file=sys.stderr)
+                    return 1
+                print("Source configuration and reachable feeds checked")
                 return 0
 
         if args.command == "wiki" and args.wiki_command == "lint":
@@ -102,3 +127,45 @@ def _print_daily_result(prefix: str, result) -> None:
         print(f"- {title}")
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _print_fetch_result(result) -> None:
+    print(f"Frontier Radar fetch {result.status}: {result.item_count} items")
+    for source, count in sorted(result.counts.items()):
+        print(f"- {source}: {count}")
+    for error in result.errors:
+        print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _check_sources(sources: dict) -> list[str]:
+    errors: list[str] = []
+    for name, settings in sorted(sources.items()):
+        if not settings.get("enabled", False):
+            continue
+        if name in {"github", "hn", "arxiv"}:
+            if not settings.get("queries"):
+                errors.append(f"{name}: enabled source has no queries")
+            continue
+        if name == "rss":
+            _check_feeds("rss", settings.get("feeds", []), errors)
+            continue
+        if name == "youtube":
+            _check_feeds(
+                "youtube",
+                [{"name": url, "url": url} for url in settings.get("channel_feeds", [])],
+                errors,
+            )
+    return errors
+
+
+def _check_feeds(source: str, feeds: list[dict], errors: list[str]) -> None:
+    for feed in feeds:
+        name = feed.get("name") or feed.get("url") or "<unknown>"
+        url = feed.get("url")
+        if not url:
+            errors.append(f"{source} feed {name}: missing url")
+            continue
+        try:
+            fetch_bytes(str(url), timeout=10)
+        except Exception as exc:
+            errors.append(f"{source} feed {name}: {exc}")

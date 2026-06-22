@@ -24,10 +24,10 @@ rss:
   feeds:
     - name: "OpenAI Blog"
       url: "https://openai.com/news/rss.xml"
-    - name: "Anthropic News"
-      url: "https://www.anthropic.com/news/rss.xml"
-    - name: "Google DeepMind Blog"
-      url: "https://deepmind.google/discover/blog/rss.xml"
+    - name: "Hugging Face Blog"
+      url: "https://huggingface.co/blog/feed.xml"
+    - name: "Google Research Blog"
+      url: "https://research.google/blog/rss/"
 youtube:
   enabled: true
   channel_feeds: []

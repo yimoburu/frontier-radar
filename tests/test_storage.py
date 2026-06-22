@@ -29,6 +29,7 @@ def test_database_upserts_and_lists_items(tmp_path):
     assert len(items) == 1
     assert items[0].title == "AI agents discussion"
     assert items[0].metrics["points"] == 42
+    assert db.item_ids() == {make_item().item_id}
 
 
 def test_database_records_run_metadata(tmp_path):

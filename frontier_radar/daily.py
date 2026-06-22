@@ -26,6 +26,14 @@ class DailyResult:
     top_titles: list[str]
 
 
+@dataclass(frozen=True)
+class FetchResult:
+    status: str
+    counts: dict[str, int]
+    errors: list[str]
+    item_count: int
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -44,7 +52,11 @@ def collect_all(
     manual_config = sources.get("manual", {})
     if manual_config.get("enabled", False):
         try:
-            manual_items = collect_manual_notes(root, manual_config.get("directory", "manual"))
+            manual_items = collect_manual_notes(
+                root,
+                manual_config.get("directory", "manual"),
+                errors=errors,
+            )
             items.extend(manual_items)
             counts["manual"] = len(manual_items)
         except Exception as exc:
@@ -114,7 +126,7 @@ def collect_all(
     return items, counts, errors
 
 
-def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> DailyResult:
+def fetch_once(root: Path, now: str | None = None, live_network: bool = True) -> FetchResult:
     root = Path(root).resolve()
     started_at = now or utc_now_iso()
     config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
@@ -123,10 +135,55 @@ def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> 
 
     raw_store = RawStore(root)
     items, counts, errors = collect_all(root, raw_store, config.sources, started_at, live_network)
+    items = _dedupe_items(items)
     db.upsert_items(items)
+    status = _status(items, errors)
+    db.record_run(
+        started_at=started_at,
+        finished_at=utc_now_iso(),
+        status=status,
+        counts=counts,
+        errors=errors,
+        outputs=[],
+    )
+    return FetchResult(status=status, counts=counts, errors=errors, item_count=len(items))
 
-    ranked = rank_items(db.list_items(), config.topics, now=started_at, limit=20)
-    digest_path = write_daily_digest(root, started_at[:10], ranked, counts, errors)
+
+def run_daily(root: Path, now: str | None = None, live_network: bool = True) -> DailyResult:
+    root = Path(root).resolve()
+    started_at = now or utc_now_iso()
+    config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
+    db = Database(root / "state" / "frontier-radar.sqlite")
+    db.init()
+
+    items: list[NormalizedItem] = []
+    counts: dict[str, int] = {}
+    errors: list[str] = []
+    ranked = []
+    digest_path = Path("wiki") / "daily" / f"{started_at[:10]}.md"
+
+    try:
+        seen_item_ids = db.item_ids()
+        raw_store = RawStore(root)
+        items, counts, errors = collect_all(root, raw_store, config.sources, started_at, live_network)
+        items = _dedupe_items(items)
+        db.upsert_items(items)
+
+        ranked = rank_items(
+            items,
+            config.topics,
+            now=started_at,
+            limit=20,
+            seen_item_ids=seen_item_ids,
+        )
+        digest_path = write_daily_digest(root, started_at[:10], ranked, counts, errors)
+    except Exception as exc:
+        errors.append(f"daily pipeline: {exc}")
+        try:
+            digest_path = write_daily_digest(root, started_at[:10], [], counts, errors)
+        except Exception as render_exc:
+            errors.append(f"digest render: {render_exc}")
+
     status = _status(items, errors)
     db.record_run(
         started_at=started_at,
@@ -152,3 +209,14 @@ def _status(items: list[NormalizedItem], errors: list[str]) -> str:
     if items:
         return "partial"
     return "error"
+
+
+def _dedupe_items(items: list[NormalizedItem]) -> list[NormalizedItem]:
+    seen: set[str] = set()
+    unique: list[NormalizedItem] = []
+    for item in items:
+        if item.item_id in seen:
+            continue
+        seen.add(item.item_id)
+        unique.append(item)
+    return unique
