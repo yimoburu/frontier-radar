@@ -1,6 +1,6 @@
 # Frontier Radar
 
-Frontier Radar is a local, harness-agnostic tracker for frontier AI signals. It stores raw source evidence, ranks what matters, and grows a Markdown knowledge wiki over time.
+Frontier Radar is a local, harness-agnostic tracker for frontier AI signals. It stores raw source evidence locally, ranks what matters, and grows a local Markdown knowledge wiki over time.
 
 ## Quickstart
 
@@ -23,9 +23,9 @@ wiki work can speak closer to the user's current context.
 
 ## Knowledge Layout
 
-- `raw/`: immutable source snapshots.
+- `raw/`: ignored local source snapshots.
 - `state/`: SQLite state and generated indexes.
-- `wiki/`: synthesized Markdown memory.
+- `wiki/`: ignored synthesized Markdown memory, with tracked `.gitkeep` placeholders for folder structure.
 - `AGENTS.md`: harness-neutral operating contract.
 
 ## Daily Schedule

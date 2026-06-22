@@ -5,9 +5,9 @@ This file is the canonical contract for any LLM harness operating this repositor
 ## Operating Model
 
 - Use the CLI first: `frontier-radar daily`, `frontier-radar fetch`, `frontier-radar rank`, `frontier-radar digest`, and `frontier-radar wiki lint`.
-- Treat `raw/` as immutable evidence. Do not edit raw snapshots to change meaning.
+- Treat `raw/` as local immutable evidence. Do not edit raw snapshots to change meaning, and do not stage files under `raw/`.
 - Treat `state/` as generated machine state. Do not hand-edit SQLite or generated indexes.
-- Maintain `wiki/` as the synthesized knowledge layer.
+- Maintain `wiki/` as the synthesized knowledge layer, but do not stage wiki content. Only `.gitkeep` placeholders under `wiki/` are tracked to preserve folder structure.
 - Prefer small, surgical Markdown edits that preserve existing context and links.
 
 ## Wiki Rules

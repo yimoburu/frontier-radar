@@ -4,6 +4,10 @@ __pycache__/
 *.egg-info/
 uv.lock
 raw/
+wiki/**
+!wiki/
+!wiki/**/
+!wiki/**/.gitkeep
 state/*.sqlite
 state/*.sqlite-*
 state/*.log
