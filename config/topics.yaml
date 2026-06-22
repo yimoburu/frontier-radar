@@ -1,3 +1,10 @@
+ranking_weights:
+  freshness: 1.2
+  momentum: 0.7
+  relevance: 2.0
+  novelty: 1.0
+  source_weight: 0.6
+
 topics:
   foundation-models:
     keywords: ["frontier model", "large language model", "LLM", "pretraining"]
