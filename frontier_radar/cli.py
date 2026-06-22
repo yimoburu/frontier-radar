@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from frontier_radar.config import load_app_config
 from frontier_radar.daily import run_daily, utc_now_iso
@@ -14,55 +15,59 @@ from frontier_radar.wiki.render import write_daily_digest
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
-    root = Path(args.root)
+    root = Path(args.root).resolve()
 
-    if args.command == "daily":
-        result = run_daily(root)
-        _print_daily_result("Frontier Radar", result)
-        return 0 if result.status in {"ok", "partial"} else 1
+    try:
+        if args.command == "daily":
+            result = run_daily(root)
+            _print_daily_result("Frontier Radar", result)
+            return 0 if result.status in {"ok", "partial"} else 1
 
-    if args.command == "fetch":
-        result = run_daily(root)
-        _print_daily_result("Fetched and wrote digest", result)
-        return 0 if result.status in {"ok", "partial"} else 1
+        if args.command == "fetch":
+            result = run_daily(root)
+            _print_daily_result("Fetched and wrote digest", result)
+            return 0 if result.status in {"ok", "partial"} else 1
 
-    if args.command == "rank":
-        config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
-        db = Database(root / "state" / "frontier-radar.sqlite")
-        db.init()
-        ranked = rank_items(db.list_items(), config.topics, now=utc_now_iso(), limit=20)
-        for entry in ranked:
-            print(f"{entry.score:.2f}\t{entry.item.title}\t{entry.item.url}")
-        return 0
-
-    if args.command == "digest":
-        config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
-        db = Database(root / "state" / "frontier-radar.sqlite")
-        db.init()
-        now = utc_now_iso()
-        ranked = rank_items(db.list_items(), config.topics, now=now, limit=20)
-        path = write_daily_digest(root, now[:10], ranked, {}, [])
-        print(f"Wrote {path}")
-        return 0
-
-    if args.command == "sources":
-        config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
-        if args.sources_command == "list":
-            for name, settings in sorted(config.sources.items()):
-                state = "enabled" if settings.get("enabled", False) else "disabled"
-                print(f"{name}\t{state}")
-            return 0
-        if args.sources_command == "check":
-            print("Source configuration loaded")
+        if args.command == "rank":
+            config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
+            db = Database(root / "state" / "frontier-radar.sqlite")
+            db.init()
+            ranked = rank_items(db.list_items(), config.topics, now=utc_now_iso(), limit=20)
+            for entry in ranked:
+                print(f"{entry.score:.2f}\t{entry.item.title}\t{entry.item.url}")
             return 0
 
-    if args.command == "wiki" and args.wiki_command == "lint":
-        result = lint_wiki(root)
-        if result.ok:
-            print("Wiki lint passed")
+        if args.command == "digest":
+            config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
+            db = Database(root / "state" / "frontier-radar.sqlite")
+            db.init()
+            now = utc_now_iso()
+            ranked = rank_items(db.list_items(), config.topics, now=now, limit=20)
+            path = write_daily_digest(root, now[:10], ranked, {}, [])
+            print(f"Wrote {path}")
             return 0
-        for error in result.errors:
-            print(error)
+
+        if args.command == "sources":
+            config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
+            if args.sources_command == "list":
+                for name, settings in sorted(config.sources.items()):
+                    state = "enabled" if settings.get("enabled", False) else "disabled"
+                    print(f"{name}\t{state}")
+                return 0
+            if args.sources_command == "check":
+                print("Source configuration loaded")
+                return 0
+
+        if args.command == "wiki" and args.wiki_command == "lint":
+            result = lint_wiki(root)
+            if result.ok:
+                print("Wiki lint passed")
+                return 0
+            for error in result.errors:
+                print(error, file=sys.stderr)
+            return 1
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
     parser.print_help()
@@ -96,4 +101,4 @@ def _print_daily_result(prefix: str, result) -> None:
     for title in result.top_titles[:5]:
         print(f"- {title}")
     for error in result.errors:
-        print(f"ERROR: {error}")
+        print(f"ERROR: {error}", file=sys.stderr)
