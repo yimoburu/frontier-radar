@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from frontier_radar.chat import chat_once
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
+from frontier_radar.llm import load_llm_settings, synthesize_daily_brief
 from frontier_radar.jobs import run_enrich, run_health, run_retry_failed, run_state_vacuum
 from frontier_radar.daily import ReviewItem, RunReview, fetch_once, run_daily, utc_now_iso
 from frontier_radar.ranking import rank_items
@@ -87,12 +88,20 @@ def main(argv: list[str] | None = None) -> int:
                 limit=20,
                 seen_item_ids=set(),
             )
+            errors = list(latest_run["errors"])
+            intelligence = synthesize_daily_brief(
+                ranked,
+                load_llm_settings(root / "config" / "llm.yaml"),
+            )
+            if intelligence.error:
+                errors.append(intelligence.error)
             path = write_daily_digest(
                 root,
                 now[:10],
                 ranked,
                 latest_run["counts"],
-                latest_run["errors"],
+                errors,
+                intelligence_brief=intelligence.lines,
             )
             print(f"Wrote {path}")
             _print_review_summary(

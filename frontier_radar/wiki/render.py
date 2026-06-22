@@ -15,6 +15,7 @@ def render_daily_digest(
     ranked_items: list[RankedItem],
     counts: dict[str, int],
     errors: list[str],
+    intelligence_brief: list[str] | None = None,
 ) -> str:
     lines = [
         f"# Frontier Radar Daily - {date}",
@@ -36,7 +37,7 @@ def render_daily_digest(
         lines.append("- No items collected.")
 
     lines.extend(["", "## Intelligence Brief", ""])
-    lines.extend(_intelligence_brief_lines(ranked_items))
+    lines.extend(_configured_brief_lines(intelligence_brief) or _intelligence_brief_lines(ranked_items))
 
     lines.extend(["", "## Top Repositories", ""])
     lines.extend(_compact_item_lines(_filter_items(ranked_items, source_type="repo")))
@@ -104,13 +105,14 @@ def write_daily_digest(
     ranked_items: list[RankedItem],
     counts: dict[str, int],
     errors: list[str],
+    intelligence_brief: list[str] | None = None,
 ) -> Path:
     _validate_date(date)
     relative = Path("wiki") / "daily" / f"{date}.md"
     absolute = root / relative
     absolute.parent.mkdir(parents=True, exist_ok=True)
     absolute.write_text(
-        render_daily_digest(date, ranked_items, counts, errors),
+        render_daily_digest(date, ranked_items, counts, errors, intelligence_brief),
         encoding="utf-8",
     )
     return relative
@@ -169,6 +171,20 @@ def _compact_item_lines(entries: list[RankedItem]) -> list[str]:
         raw_path = _inline_text(entry.item.raw_path)
         lines.append(f"- [{title}]({url}) (score {entry.score:.2f}; raw: `{raw_path}`)")
     return lines
+
+
+def _configured_brief_lines(lines: list[str] | None) -> list[str]:
+    if not lines:
+        return []
+    normalized: list[str] = []
+    for line in lines:
+        text = _inline_text(line)
+        if not text:
+            continue
+        if not text.startswith("- "):
+            text = "- " + text.lstrip("- ")
+        normalized.append(text)
+    return normalized
 
 
 def _intelligence_brief_lines(ranked_items: list[RankedItem]) -> list[str]:
