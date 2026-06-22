@@ -33,18 +33,28 @@ def parse_github_search(payload: dict, raw_path: str) -> list[NormalizedItem]:
     return [item for item in items if item.url and item.title]
 
 
-def collect_github(config: dict, raw_store: RawStore, now: str) -> list[NormalizedItem]:
+def collect_github(
+    config: dict,
+    raw_store: RawStore,
+    now: str,
+    errors: list[str] | None = None,
+) -> list[NormalizedItem]:
     results: list[NormalizedItem] = []
     for query in config.get("queries", []):
-        params = urlencode(
-            {
-                "q": query,
-                "sort": "updated",
-                "order": "desc",
-                "per_page": int(config.get("per_query", 10)),
-            }
-        )
-        raw = fetch_bytes(f"https://api.github.com/search/repositories?{params}")
-        raw_path = raw_store.write_snapshot("github", "json", raw, now=now)
-        results.extend(parse_github_search(json.loads(raw.decode("utf-8")), str(raw_path)))
+        try:
+            params = urlencode(
+                {
+                    "q": query,
+                    "sort": "updated",
+                    "order": "desc",
+                    "per_page": int(config.get("per_query", 10)),
+                }
+            )
+            raw = fetch_bytes(f"https://api.github.com/search/repositories?{params}")
+            raw_path = raw_store.write_snapshot("github", "json", raw, now=now)
+            results.extend(parse_github_search(json.loads(raw.decode("utf-8")), str(raw_path)))
+        except Exception as exc:
+            if errors is not None:
+                errors.append(f"github query {query}: {exc}")
+            continue
     return results

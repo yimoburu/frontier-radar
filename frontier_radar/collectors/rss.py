@@ -67,13 +67,21 @@ def parse_feed(xml: bytes, source: str, source_name: str, raw_path: str) -> list
     return [item for item in items if item.url and item.title]
 
 
-def collect_rss(config: dict, raw_store: RawStore, now: str, source: str = "rss") -> list[NormalizedItem]:
+def collect_rss(
+    config: dict,
+    raw_store: RawStore,
+    now: str,
+    source: str = "rss",
+    errors: list[str] | None = None,
+) -> list[NormalizedItem]:
     results: list[NormalizedItem] = []
     for feed in config.get("feeds", []):
         try:
             xml = fetch_bytes(feed["url"])
             raw_path = raw_store.write_snapshot(source, "xml", xml, now=now)
             results.extend(parse_feed(xml, source=source, source_name=feed["name"], raw_path=str(raw_path)))
-        except Exception:
+        except Exception as exc:
+            if errors is not None:
+                errors.append(f"{source} feed {feed.get('name', feed.get('url', '<unknown>'))}: {exc}")
             continue
     return results

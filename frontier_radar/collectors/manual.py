@@ -14,6 +14,9 @@ def collect_manual_notes(root: Path, directory: str) -> list[NormalizedItem]:
         return []
     items: list[NormalizedItem] = []
     for path in sorted(base.glob("*.md")):
+        resolved_path = path.resolve()
+        if resolved_path != base and base not in resolved_path.parents:
+            continue
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line.startswith("- "):
                 continue

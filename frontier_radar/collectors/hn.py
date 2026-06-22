@@ -31,11 +31,21 @@ def parse_hn_search(payload: dict, raw_path: str) -> list[NormalizedItem]:
     return [item for item in items if item.url and item.title]
 
 
-def collect_hn(config: dict, raw_store: RawStore, now: str) -> list[NormalizedItem]:
+def collect_hn(
+    config: dict,
+    raw_store: RawStore,
+    now: str,
+    errors: list[str] | None = None,
+) -> list[NormalizedItem]:
     results: list[NormalizedItem] = []
     for query in config.get("queries", []):
-        params = urlencode({"query": query, "tags": "story", "hitsPerPage": int(config.get("per_query", 10))})
-        raw = fetch_bytes(f"https://hn.algolia.com/api/v1/search_by_date?{params}")
-        raw_path = raw_store.write_snapshot("hn", "json", raw, now=now)
-        results.extend(parse_hn_search(json.loads(raw.decode("utf-8")), str(raw_path)))
+        try:
+            params = urlencode({"query": query, "tags": "story", "hitsPerPage": int(config.get("per_query", 10))})
+            raw = fetch_bytes(f"https://hn.algolia.com/api/v1/search_by_date?{params}")
+            raw_path = raw_store.write_snapshot("hn", "json", raw, now=now)
+            results.extend(parse_hn_search(json.loads(raw.decode("utf-8")), str(raw_path)))
+        except Exception as exc:
+            if errors is not None:
+                errors.append(f"hn query {query}: {exc}")
+            continue
     return results

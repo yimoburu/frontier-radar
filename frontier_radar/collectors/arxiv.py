@@ -8,34 +8,44 @@ from frontier_radar.models import NormalizedItem
 from frontier_radar.raw import RawStore
 
 
-def collect_arxiv(config: dict, raw_store: RawStore, now: str) -> list[NormalizedItem]:
+def collect_arxiv(
+    config: dict,
+    raw_store: RawStore,
+    now: str,
+    errors: list[str] | None = None,
+) -> list[NormalizedItem]:
     results: list[NormalizedItem] = []
     for query in config.get("queries", []):
-        params = urlencode(
-            {
-                "search_query": f"all:{query}",
-                "start": 0,
-                "max_results": int(config.get("per_query", 10)),
-                "sortBy": "submittedDate",
-                "sortOrder": "descending",
-            }
-        )
-        xml = fetch_bytes(f"https://export.arxiv.org/api/query?{params}")
-        raw_path = raw_store.write_snapshot("arxiv", "xml", xml, now=now)
-        for item in parse_feed(xml, source="arxiv", source_name="arXiv", raw_path=str(raw_path)):
-            results.append(
-                NormalizedItem(
-                    source=item.source,
-                    source_type="paper",
-                    title=item.title,
-                    url=item.url,
-                    author=item.author,
-                    published_at=item.published_at,
-                    summary=item.summary,
-                    raw_path=item.raw_path,
-                    tags=["paper"],
-                    metrics=item.metrics,
-                    metadata=item.metadata,
-                )
+        try:
+            params = urlencode(
+                {
+                    "search_query": f"all:{query}",
+                    "start": 0,
+                    "max_results": int(config.get("per_query", 10)),
+                    "sortBy": "submittedDate",
+                    "sortOrder": "descending",
+                }
             )
+            xml = fetch_bytes(f"https://export.arxiv.org/api/query?{params}")
+            raw_path = raw_store.write_snapshot("arxiv", "xml", xml, now=now)
+            for item in parse_feed(xml, source="arxiv", source_name="arXiv", raw_path=str(raw_path)):
+                results.append(
+                    NormalizedItem(
+                        source=item.source,
+                        source_type="paper",
+                        title=item.title,
+                        url=item.url,
+                        author=item.author,
+                        published_at=item.published_at,
+                        summary=item.summary,
+                        raw_path=item.raw_path,
+                        tags=["paper"],
+                        metrics=item.metrics,
+                        metadata=item.metadata,
+                    )
+                )
+        except Exception as exc:
+            if errors is not None:
+                errors.append(f"arxiv query {query}: {exc}")
+            continue
     return results
