@@ -130,3 +130,59 @@ def test_cli_sources_check_accepts_reachable_feed(tmp_path, monkeypatch, capsys)
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "checked" in captured.out
+
+
+def test_cli_sources_check_probes_query_source_reachability(tmp_path, monkeypatch, capsys):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sources.yaml").write_text(
+        "github:\n"
+        "  enabled: true\n"
+        "  queries: ['agent framework']\n"
+        "hn:\n"
+        "  enabled: true\n"
+        "  queries: ['LLM']\n"
+        "arxiv:\n"
+        "  enabled: true\n"
+        "  queries: ['large language models']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "topics.yaml").write_text("topics: {}\n", encoding="utf-8")
+    seen_urls = []
+
+    def record_fetch(url, timeout=10):
+        seen_urls.append(url)
+        return b"{}"
+
+    monkeypatch.setattr("frontier_radar.cli.fetch_bytes", record_fetch)
+
+    exit_code = main(["--root", str(tmp_path), "sources", "check"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.err == ""
+    assert any("api.github.com/search/repositories" in url for url in seen_urls)
+    assert any("hn.algolia.com/api/v1/search_by_date" in url for url in seen_urls)
+    assert any("export.arxiv.org/api/query" in url for url in seen_urls)
+
+
+def test_cli_sources_check_reports_unreachable_query_source(tmp_path, monkeypatch, capsys):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sources.yaml").write_text(
+        "github:\n"
+        "  enabled: true\n"
+        "  queries: ['agent framework']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "topics.yaml").write_text("topics: {}\n", encoding="utf-8")
+
+    def fail_fetch(url, timeout=10):
+        raise OSError("blocked")
+
+    monkeypatch.setattr("frontier_radar.cli.fetch_bytes", fail_fetch)
+
+    exit_code = main(["--root", str(tmp_path), "sources", "check"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "github" in captured.err

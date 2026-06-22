@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import sys
+from urllib.parse import urlencode
 
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
@@ -105,7 +106,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("daily", help="run fetch, rank, and digest")
-    sub.add_parser("fetch", help="collect sources through the daily pipeline")
+    sub.add_parser("fetch", help="collect sources and update storage")
     sub.add_parser("rank", help="print ranked stored items")
     sub.add_parser("digest", help="write a digest from stored items")
 
@@ -142,9 +143,23 @@ def _check_sources(sources: dict) -> list[str]:
     for name, settings in sorted(sources.items()):
         if not settings.get("enabled", False):
             continue
-        if name in {"github", "hn", "arxiv"}:
+        if name == "github":
             if not settings.get("queries"):
                 errors.append(f"{name}: enabled source has no queries")
+                continue
+            _check_url(name, _github_check_url(settings), errors)
+            continue
+        if name == "hn":
+            if not settings.get("queries"):
+                errors.append(f"{name}: enabled source has no queries")
+                continue
+            _check_url(name, _hn_check_url(settings), errors)
+            continue
+        if name == "arxiv":
+            if not settings.get("queries"):
+                errors.append(f"{name}: enabled source has no queries")
+                continue
+            _check_url(name, _arxiv_check_url(settings), errors)
             continue
         if name == "rss":
             _check_feeds("rss", settings.get("feeds", []), errors)
@@ -169,3 +184,36 @@ def _check_feeds(source: str, feeds: list[dict], errors: list[str]) -> None:
             fetch_bytes(str(url), timeout=10)
         except Exception as exc:
             errors.append(f"{source} feed {name}: {exc}")
+
+
+def _check_url(source: str, url: str, errors: list[str]) -> None:
+    try:
+        fetch_bytes(url, timeout=10)
+    except Exception as exc:
+        errors.append(f"{source}: {exc}")
+
+
+def _github_check_url(settings: dict) -> str:
+    query = str(settings.get("queries", [""])[0])
+    params = urlencode({"q": query, "sort": "updated", "order": "desc", "per_page": 1})
+    return f"https://api.github.com/search/repositories?{params}"
+
+
+def _hn_check_url(settings: dict) -> str:
+    query = str(settings.get("queries", [""])[0])
+    params = urlencode({"query": query, "tags": "story", "hitsPerPage": 1})
+    return f"https://hn.algolia.com/api/v1/search_by_date?{params}"
+
+
+def _arxiv_check_url(settings: dict) -> str:
+    query = str(settings.get("queries", [""])[0])
+    params = urlencode(
+        {
+            "search_query": f"all:{query}",
+            "start": 0,
+            "max_results": 1,
+            "sortBy": "submittedDate",
+            "sortOrder": "descending",
+        }
+    )
+    return f"https://export.arxiv.org/api/query?{params}"
