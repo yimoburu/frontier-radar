@@ -10,11 +10,11 @@ class RawStore:
 
     def write_snapshot(self, source: str, extension: str, content: bytes, now: str | None = None) -> Path:
         self._validate_source(source)
+        suffix = self._validate_extension(extension)
         moment = datetime.fromisoformat(now.replace("Z", "+00:00")) if now else datetime.now(timezone.utc)
         moment = moment.astimezone(timezone.utc)
         day = moment.strftime("%Y-%m-%d")
         stamp = moment.strftime("%Y%m%dT%H%M%SZ")
-        suffix = extension.lstrip(".")
         directory = Path("raw") / day / source
         (self.root / directory).mkdir(parents=True, exist_ok=True)
 
@@ -41,3 +41,20 @@ class RawStore:
             or "\\" in source
         ):
             raise ValueError(f"unsafe raw snapshot source: {source!r}")
+
+    def _validate_extension(self, extension: str) -> str:
+        suffix = extension.lstrip(".")
+        path = Path(suffix)
+        if (
+            not extension
+            or not suffix
+            or extension in {".", ".."}
+            or Path(extension).is_absolute()
+            or path.is_absolute()
+            or len(path.parts) != 1
+            or "/" in suffix
+            or "\\" in suffix
+            or suffix in {".", ".."}
+        ):
+            raise ValueError(f"unsafe raw snapshot extension: {extension!r}")
+        return suffix

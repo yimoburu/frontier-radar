@@ -14,6 +14,15 @@ def test_raw_store_writes_dated_snapshot(tmp_path):
     assert (tmp_path / path).read_bytes() == b'{"ok": true}'
 
 
+def test_raw_store_accepts_simple_extension_with_leading_dot(tmp_path):
+    store = RawStore(tmp_path)
+
+    path = store.write_snapshot("github", ".json", b'{"ok": true}', now="2026-06-22T15:00:00+00:00")
+
+    assert path == Path("raw/2026-06-22/github/20260622T150000Z.json")
+    assert (tmp_path / path).read_bytes() == b'{"ok": true}'
+
+
 def test_raw_store_keeps_same_second_snapshots_immutable(tmp_path):
     store = RawStore(tmp_path)
 
@@ -31,6 +40,14 @@ def test_raw_store_rejects_unsafe_source_paths(tmp_path, source):
 
     with pytest.raises(ValueError):
         store.write_snapshot(source, "json", b"unsafe", now="2026-06-22T15:00:00+00:00")
+
+
+@pytest.mark.parametrize("extension", ["../escape", "/tmp/escape"])
+def test_raw_store_rejects_unsafe_extensions(tmp_path, extension):
+    store = RawStore(tmp_path)
+
+    with pytest.raises(ValueError):
+        store.write_snapshot("github", extension, b"unsafe", now="2026-06-22T15:00:00+00:00")
 
 
 def test_raw_store_uses_exclusive_creation_when_snapshot_appears_during_write(tmp_path, monkeypatch):
