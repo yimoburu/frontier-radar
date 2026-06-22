@@ -182,7 +182,7 @@ Create `/Users/xwli/Documents/st/CODEX.md`:
 Read and follow `AGENTS.md` first. This file only records Codex-specific notes.
 
 - Use the repository CLI rather than Codex-specific workflows for core actions.
-- Codex app automation may call `frontier-radar daily`, but the CLI remains the durable interface.
+- Any automation should call `frontier-radar daily`; the CLI remains the durable interface.
 ```
 
 Create `/Users/xwli/Documents/st/README.md`:

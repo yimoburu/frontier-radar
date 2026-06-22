@@ -19,6 +19,13 @@ DEFAULT_SOURCE_WEIGHTS = {
     "github": 1.1,
     "hn": 1.0,
 }
+DEFAULT_RANKING_WEIGHTS = {
+    "freshness": 1.0,
+    "momentum": 1.0,
+    "relevance": 1.0,
+    "novelty": 1.0,
+    "source_weight": 1.0,
+}
 
 
 @dataclass(frozen=True)
@@ -91,7 +98,11 @@ def score_item(
         "novelty": novelty_score(item, seen_item_ids),
         "source_weight": source_weight_score(item, topics),
     }
-    return RankedItem(item=item, score=sum(components.values()), components=components)
+    return RankedItem(
+        item=item,
+        score=_weighted_score(components, topics),
+        components=components,
+    )
 
 
 def rank_items(
@@ -124,3 +135,27 @@ def _numeric_metric(value: int | float | str | None) -> float:
     except (TypeError, ValueError):
         return 0.0
     return max(0.0, metric)
+
+
+def _weighted_score(components: dict[str, float], topics: dict[str, Any]) -> float:
+    weights = _ranking_weights(topics)
+    return sum(value * weights.get(name, 1.0) for name, value in components.items())
+
+
+def _ranking_weights(topics: dict[str, Any]) -> dict[str, float]:
+    weights = dict(DEFAULT_RANKING_WEIGHTS)
+    configured = topics.get("ranking_weights", {})
+    if not isinstance(configured, dict):
+        return weights
+    for name, value in configured.items():
+        if name in weights:
+            weights[name] = _numeric_weight(value, default=weights[name])
+    return weights
+
+
+def _numeric_weight(value: int | float | str | None, default: float) -> float:
+    try:
+        weight = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(0.0, weight)

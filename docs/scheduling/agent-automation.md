@@ -26,3 +26,7 @@ Suggested cadence:
 - Maintenance run: weekly, after enrichment.
 
 Do not schedule `fetch`, `rank`, and `digest` as separate blind clock jobs. They are internal stages coordinated by the CLI through state, locks, and source status.
+frontier-radar daily
+```
+
+The intended schedule is daily at 8:00 AM in `America/Los_Angeles`. The automation prompt should run the command in `/Users/xwli/Documents/st`, report the digest path, include the top items, and surface any source errors.

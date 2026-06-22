@@ -89,6 +89,34 @@ def test_cli_fetch_collects_without_writing_digest(tmp_path, capsys):
     assert not (tmp_path / "wiki" / "daily").exists()
 
 
+def test_cli_daily_prints_human_reviewable_change_summary(tmp_path, capsys):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sources.yaml").write_text(
+        "manual:\n  enabled: true\n  directory: manual\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "topics.yaml").write_text(
+        "topics:\n  agents:\n    keywords: ['agent']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "manual").mkdir()
+    (tmp_path / "manual" / "x-notes.md").write_text(
+        "- 2026-06-22 | Expert | https://x.com/example/status/reviewable | agent review note\n",
+        encoding="utf-8",
+    )
+
+    exit_code = main(["--root", str(tmp_path), "daily"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Review summary:" in captured.out
+    assert "- Changed: 1 new, 0 refreshed" in captured.out
+    assert "- Output: wiki/daily/" in captured.out
+    assert "- Why: ranked by freshness, momentum, relevance, novelty, source_weight" in captured.out
+    assert "agent review note" in captured.out
+    assert "relevance=" in captured.out
+
+
 def test_cli_sources_check_reports_unreachable_feed(tmp_path, monkeypatch, capsys):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "sources.yaml").write_text(
