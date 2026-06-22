@@ -38,9 +38,13 @@ frontier-radar daily --budget-minutes 20 --top-n 30
 
 ## LLM Synthesis
 
-Daily digests can use an OpenAI-compatible LLM endpoint to write the `Intelligence Brief`
-from ranked source evidence. Edit `config/llm.yaml`, set `enabled: true`, set `model`
-to your provider's model name, and export the API key named by `api_key_env`:
+LLM synthesis is opt-in. By default, Frontier Radar uses the deterministic ranking and
+Markdown rendering path, so frontier-radar daily works without an LLM key.
+
+Daily digests can optionally use an OpenAI-compatible LLM endpoint to write the
+`Intelligence Brief` from ranked source evidence. Edit `config/llm.yaml`, set
+`enabled: true`, set `model` to your provider's model name, and export the API key
+named by `api_key_env`:
 
 ```bash
 export FRONTIER_RADAR_LLM_API_KEY="..."
