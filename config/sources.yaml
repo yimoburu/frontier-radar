@@ -1,0 +1,36 @@
+github:
+  enabled: true
+  per_query: 10
+  queries:
+    - "agent framework language:Python"
+    - "llm inference language:Python"
+    - "evals benchmark language:Python"
+hn:
+  enabled: true
+  per_query: 10
+  queries:
+    - "LLM"
+    - "AI agents"
+    - "inference"
+arxiv:
+  enabled: true
+  per_query: 10
+  queries:
+    - "large language models"
+    - "AI agents"
+    - "inference optimization"
+rss:
+  enabled: true
+  feeds:
+    - name: "OpenAI Blog"
+      url: "https://openai.com/news/rss.xml"
+    - name: "Anthropic News"
+      url: "https://www.anthropic.com/news/rss.xml"
+    - name: "Google DeepMind Blog"
+      url: "https://deepmind.google/discover/blog/rss.xml"
+youtube:
+  enabled: true
+  channel_feeds: []
+manual:
+  enabled: true
+  directory: "manual"

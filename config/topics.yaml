@@ -1,0 +1,25 @@
+topics:
+  foundation-models:
+    keywords: ["frontier model", "large language model", "LLM", "pretraining"]
+  agents-and-tool-use:
+    keywords: ["agent", "tool use", "computer use", "MCP", "workflow"]
+  reasoning-and-planning:
+    keywords: ["reasoning", "planning", "test-time compute", "chain of thought"]
+  post-training-and-alignment:
+    keywords: ["post-training", "RLHF", "DPO", "alignment", "preference optimization"]
+  evals-and-benchmarks:
+    keywords: ["eval", "benchmark", "leaderboard", "SWE-bench", "MMLU"]
+  inference-and-serving:
+    keywords: ["inference", "serving", "vLLM", "latency", "throughput", "KV cache"]
+  multimodal-models:
+    keywords: ["multimodal", "vision-language", "audio", "video model"]
+  robotics-and-embodied-ai:
+    keywords: ["robotics", "embodied", "world model", "simulation"]
+  data-and-synthetic-data:
+    keywords: ["synthetic data", "data curation", "distillation"]
+  ai-infrastructure:
+    keywords: ["GPU", "cluster", "CUDA", "training infrastructure"]
+  developer-tools:
+    keywords: ["coding agent", "developer tool", "IDE", "code generation"]
+  safety-and-policy:
+    keywords: ["safety", "policy", "governance", "red team"]
