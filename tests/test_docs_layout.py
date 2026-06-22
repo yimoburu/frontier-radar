@@ -23,8 +23,18 @@ def test_wiki_seed_layout_exists():
 def test_scheduler_docs_are_harness_agnostic():
     root = Path(__file__).resolve().parents[1]
     cron = (root / "docs/scheduling/cron.md").read_text(encoding="utf-8")
-    codex = (root / "docs/scheduling/codex.md").read_text(encoding="utf-8")
+    automation = (root / "docs/scheduling/agent-automation.md").read_text(encoding="utf-8")
 
     assert "frontier-radar daily" in cron
-    assert "frontier-radar daily" in codex
-    assert "America/Los_Angeles" in codex
+    assert "frontier-radar daily" in automation
+    assert "America/Los_Angeles" in automation
+    assert not (root / "docs/scheduling/codex.md").exists()
+
+
+def test_readme_daily_schedule_does_not_name_a_specific_harness():
+    root = Path(__file__).resolve().parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+
+    assert "agent automation" in readme
+    for provider in ["Codex", "Claude Code", "OpenCode", "Gemini CLI", "Cursor"]:
+        assert provider not in readme

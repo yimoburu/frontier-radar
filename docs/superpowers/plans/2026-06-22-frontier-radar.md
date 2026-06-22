@@ -40,7 +40,7 @@ All paths are under `/Users/xwli/Documents/st`.
 - Create `docs/scheduling/cron.md`: portable cron example.
 - Create `docs/scheduling/launchd.md`: macOS launchd example.
 - Create `docs/scheduling/systemd.md`: Linux systemd timer example.
-- Create `docs/scheduling/codex.md`: Codex app automation instructions without embedding scheduler internals.
+- Create `docs/scheduling/agent-automation.md`: harness-neutral automation instructions without embedding scheduler internals.
 - Create `manual/.gitkeep`, `raw/.gitkeep`, `state/.gitkeep`, and wiki directory `.gitkeep` files.
 - Create tests under `tests/` for each behavioral unit.
 
@@ -216,7 +216,7 @@ The intended daily run is 8:00 AM in America/Los_Angeles:
 frontier-radar daily
 ```
 
-See `docs/scheduling/` for cron, launchd, systemd, and Codex app notes.
+See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
 ```
 
 Create `/Users/xwli/Documents/st/config/sources.yaml`:
@@ -1921,7 +1921,7 @@ git commit -m "feat: add daily pipeline and cli"
 - Create: `/Users/xwli/Documents/st/docs/scheduling/cron.md`
 - Create: `/Users/xwli/Documents/st/docs/scheduling/launchd.md`
 - Create: `/Users/xwli/Documents/st/docs/scheduling/systemd.md`
-- Create: `/Users/xwli/Documents/st/docs/scheduling/codex.md`
+- Create: `/Users/xwli/Documents/st/docs/scheduling/agent-automation.md`
 - Create: `/Users/xwli/Documents/st/tests/test_docs_layout.py`
 
 - [ ] **Step 1: Write failing layout test**
@@ -1954,11 +1954,12 @@ def test_wiki_seed_layout_exists():
 def test_scheduler_docs_are_harness_agnostic():
     root = Path(__file__).resolve().parents[1]
     cron = (root / "docs/scheduling/cron.md").read_text(encoding="utf-8")
-    codex = (root / "docs/scheduling/codex.md").read_text(encoding="utf-8")
+    automation = (root / "docs/scheduling/agent-automation.md").read_text(encoding="utf-8")
 
     assert "frontier-radar daily" in cron
-    assert "frontier-radar daily" in codex
-    assert "America/Los_Angeles" in codex
+    assert "frontier-radar daily" in automation
+    assert "America/Los_Angeles" in automation
+    assert not (root / "docs/scheduling/codex.md").exists()
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -2040,12 +2041,12 @@ Create `/Users/xwli/Documents/st/docs/scheduling/systemd.md`:
 Use a user-level systemd timer on Linux. The service should run `frontier-radar daily` from `/Users/xwli/Documents/st`. Configure the timer for 8:00 AM in the desired local timezone.
 ```
 
-Create `/Users/xwli/Documents/st/docs/scheduling/codex.md`:
+Create `/Users/xwli/Documents/st/docs/scheduling/agent-automation.md`:
 
 ```markdown
-# Codex App Automation
+# Agent Automation
 
-Codex automation is an adapter over the same command used by every scheduler:
+Any agent or automation harness should use the same command as every scheduler:
 
 ```bash
 frontier-radar daily
@@ -2077,7 +2078,7 @@ git commit -m "docs: add wiki seed and scheduler docs"
 
 **Files:**
 - Modify: `/Users/xwli/Documents/st/README.md`
-- No repo file is required for the Codex automation itself; create it with the Codex app automation tool after the CLI passes local verification.
+- No repo file is required for agent automation itself; configure it in the chosen harness after the CLI passes local verification.
 
 - [ ] **Step 1: Run the full test suite**
 
@@ -2144,9 +2145,9 @@ frontier-radar daily
 
 Expected: command exits 0, prints `Frontier Radar ok:` or `Frontier Radar partial:`, and writes a digest under `wiki/daily/`.
 
-- [ ] **Step 6: Create the Codex app daily automation**
+- [ ] **Step 6: Create an optional daily agent automation**
 
-Use the Codex app automation tool, not a repo script, with these fields:
+Use the chosen agent automation tool, not a repo script, with these fields:
 
 - name: `Frontier Radar Daily`
 - kind: cron
@@ -2173,7 +2174,7 @@ frontier-radar wiki lint
 frontier-radar daily
 ```
 
-The daily reminder is configured as an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, Codex, Claude Code, or another harness.
+Daily agent automation is only an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, or any harness that can run the CLI.
 ```
 
 - [ ] **Step 8: Commit**
@@ -2187,6 +2188,6 @@ git commit -m "chore: verify daily workflow"
 
 ## Self-Review
 
-- Spec coverage: Tasks cover harness-neutral docs, raw snapshots, SQLite state, source collectors, ranking, daily digest, wiki linting, scheduler examples, and the Codex automation adapter.
+- Spec coverage: Tasks cover harness-neutral docs, raw snapshots, SQLite state, source collectors, ranking, daily digest, wiki linting, scheduler examples, and the agent automation adapter.
 - Placeholder scan: This plan contains concrete file paths, commands, and expected outputs for each task.
 - Type consistency: `NormalizedItem`, `RankedItem`, `DailyResult`, `Database`, and CLI command names are used consistently across tasks.

@@ -26,7 +26,7 @@ The intended daily run is 8:00 AM in America/Los_Angeles:
 frontier-radar daily
 ```
 
-See `docs/scheduling/` for cron, launchd, systemd, and Codex app notes.
+See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
 
 ## Verification
 
@@ -36,4 +36,4 @@ frontier-radar wiki lint
 frontier-radar daily
 ```
 
-The daily reminder is configured as an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, Codex, Claude Code, or another harness.
+Daily agent automation is only an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, or any harness that can run the CLI.
