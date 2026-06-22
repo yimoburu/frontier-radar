@@ -1,4 +1,6 @@
 from frontier_radar.cli import main
+from frontier_radar.daily import DailyResult
+from frontier_radar.jobs import HealthResult, JobResult, VacuumResult
 
 
 def test_cli_sources_list_resolves_relative_root_from_current_cwd(tmp_path, monkeypatch, capsys):
@@ -85,6 +87,34 @@ def test_cli_fetch_collects_without_writing_digest(tmp_path, capsys):
     assert exit_code == 0
     assert "Frontier Radar fetch ok: 1 items" in captured.out
     assert not (tmp_path / "wiki" / "daily").exists()
+
+
+def test_cli_daily_prints_human_reviewable_change_summary(tmp_path, capsys):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sources.yaml").write_text(
+        "manual:\n  enabled: true\n  directory: manual\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "config" / "topics.yaml").write_text(
+        "topics:\n  agents:\n    keywords: ['agent']\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "manual").mkdir()
+    (tmp_path / "manual" / "x-notes.md").write_text(
+        "- 2026-06-22 | Expert | https://x.com/example/status/reviewable | agent review note\n",
+        encoding="utf-8",
+    )
+
+    exit_code = main(["--root", str(tmp_path), "daily"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Review summary:" in captured.out
+    assert "- Changed: 1 new, 0 refreshed" in captured.out
+    assert "- Output: wiki/daily/" in captured.out
+    assert "- Why: ranked by freshness, momentum, relevance, novelty, source_weight" in captured.out
+    assert "agent review note" in captured.out
+    assert "relevance=" in captured.out
 
 
 def test_cli_sources_check_reports_unreachable_feed(tmp_path, monkeypatch, capsys):
@@ -186,3 +216,92 @@ def test_cli_sources_check_reports_unreachable_query_source(tmp_path, monkeypatc
     assert exit_code == 1
     assert captured.out == ""
     assert "github" in captured.err
+
+
+def test_cli_daily_flags_override_job_defaults(monkeypatch, capsys):
+    captured_args = {}
+
+    def fake_run_daily(root, budget_minutes=None, top_n=None):
+        captured_args["budget_minutes"] = budget_minutes
+        captured_args["top_n"] = top_n
+        return DailyResult("ok", "wiki/daily/2026-06-22.md", {}, [], ["top item"])
+
+    monkeypatch.setattr("frontier_radar.cli.run_daily", fake_run_daily)
+
+    exit_code = main(["daily", "--budget-minutes", "5", "--top-n", "2"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured_args == {"budget_minutes": 5, "top_n": 2}
+    assert "top item" in captured.out
+
+
+def test_cli_retry_failed_runs_reliability_job(monkeypatch, capsys):
+    captured_args = {}
+
+    def fake_retry(root, since=None, budget_minutes=None):
+        captured_args["since"] = since
+        captured_args["budget_minutes"] = budget_minutes
+        return JobResult(
+            job_type="retry_failed",
+            status="ok",
+            counts={"rss": 1},
+            errors=[],
+            outputs=["wiki/daily/2026-06-22.md"],
+            item_count=1,
+        )
+
+    monkeypatch.setattr("frontier_radar.cli.run_retry_failed", fake_retry)
+
+    exit_code = main(["retry-failed", "--since", "today", "--budget-minutes", "10"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured_args == {"since": "today", "budget_minutes": 10}
+    assert "retry_failed ok" in captured.out
+
+
+def test_cli_enrich_runs_reliability_job(monkeypatch, capsys):
+    captured_args = {}
+
+    def fake_enrich(root, since=None, budget_minutes=None, top_n=None):
+        captured_args["since"] = since
+        captured_args["budget_minutes"] = budget_minutes
+        captured_args["top_n"] = top_n
+        return JobResult(
+            job_type="enrich",
+            status="ok",
+            counts={"updated_pages": 2},
+            errors=[],
+            outputs=["wiki/repos/example.md"],
+            item_count=0,
+        )
+
+    monkeypatch.setattr("frontier_radar.cli.run_enrich", fake_enrich)
+
+    exit_code = main(["enrich", "--since", "7d", "--budget-minutes", "60", "--top-n", "100"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured_args == {"since": "7d", "budget_minutes": 60, "top_n": 100}
+    assert "enrich ok" in captured.out
+
+
+def test_cli_health_and_state_vacuum(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "frontier_radar.cli.run_health",
+        lambda root: HealthResult(status="ok", issues=[]),
+    )
+    monkeypatch.setattr(
+        "frontier_radar.cli.run_state_vacuum",
+        lambda root: VacuumResult(status="ok", cleaned_locks=["pipeline"]),
+    )
+
+    health_exit = main(["health"])
+    vacuum_exit = main(["state", "vacuum"])
+
+    captured = capsys.readouterr()
+    assert health_exit == 0
+    assert vacuum_exit == 0
+    assert "health ok" in captured.out
+    assert "state vacuum ok" in captured.out

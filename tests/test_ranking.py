@@ -81,6 +81,26 @@ def test_rank_items_returns_highest_scores_first():
     assert ranked[0].item.title == "Agent Framework"
 
 
+def test_rank_items_applies_configured_component_weights_for_calibration():
+    topics = {
+        "ranking_weights": {
+            "momentum": 0.2,
+            "relevance": 3.0,
+        },
+        "topics": {"agents": {"keywords": ["agent", "tool use"]}},
+    }
+    ranked = rank_items(
+        [
+            item("Mega Database", "Storage engine notes", {"stars": 100_000}),
+            item("Focused Agent Tooling", "Agent tool use workflow", {"stars": 1}),
+        ],
+        topics,
+        now="2026-06-22T16:00:00+00:00",
+    )
+
+    assert ranked[0].item.title == "Focused Agent Tooling"
+
+
 def test_rank_items_uses_url_tiebreaker_for_equal_scores_and_titles():
     topics = {"topics": {"agents": {"keywords": ["agent"]}}}
     ranked = rank_items(

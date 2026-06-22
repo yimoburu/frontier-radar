@@ -8,7 +8,8 @@ from urllib.parse import urlencode
 from frontier_radar.chat import chat_once
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
-from frontier_radar.daily import fetch_once, run_daily, utc_now_iso
+from frontier_radar.jobs import run_enrich, run_health, run_retry_failed, run_state_vacuum
+from frontier_radar.daily import ReviewItem, RunReview, fetch_once, run_daily, utc_now_iso
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
 from frontier_radar.wiki.lint import lint_wiki
@@ -22,9 +23,36 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "daily":
-            result = run_daily(root)
+            result = run_daily(root, budget_minutes=args.budget_minutes, top_n=args.top_n)
             _print_daily_result("Frontier Radar", result)
             return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "retry-failed":
+            result = run_retry_failed(root, since=args.since, budget_minutes=args.budget_minutes)
+            _print_job_result(result)
+            return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "enrich":
+            result = run_enrich(
+                root,
+                since=args.since,
+                budget_minutes=args.budget_minutes,
+                top_n=args.top_n,
+            )
+            _print_job_result(result)
+            return 0 if result.status in {"ok", "partial"} else 1
+
+        if args.command == "health":
+            result = run_health(root)
+            _print_health_result(result)
+            return 0 if result.status == "ok" else 1
+
+        if args.command == "state" and args.state_command == "vacuum":
+            result = run_state_vacuum(root)
+            print(f"state vacuum {result.status}")
+            for lock in result.cleaned_locks:
+                print(f"- cleaned stale lock: {lock}")
+            return 0 if result.status == "ok" else 1
 
         if args.command == "fetch":
             result = fetch_once(root)
@@ -67,6 +95,24 @@ def main(argv: list[str] | None = None) -> int:
                 latest_run["errors"],
             )
             print(f"Wrote {path}")
+            _print_review_summary(
+                RunReview(
+                    item_count=len(ranked),
+                    new_items=0,
+                    refreshed_items=0,
+                    counts=latest_run["counts"],
+                    outputs=[path],
+                    why="rendered stored items ranked by freshness, momentum, relevance, novelty, source_weight",
+                    top_items=[
+                        ReviewItem(
+                            title=entry.item.title,
+                            score=entry.score,
+                            components=dict(entry.components),
+                        )
+                        for entry in ranked[:5]
+                    ],
+                )
+            )
             return 0
 
         if args.command == "chat":
@@ -121,7 +167,25 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", default=".", help="repository root")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("daily", help="run fetch, rank, and digest")
+    daily = sub.add_parser("daily", help="run fetch, rank, and digest")
+    daily.add_argument("--budget-minutes", type=int, default=None)
+    daily.add_argument("--top-n", type=int, default=None)
+
+    retry = sub.add_parser("retry-failed", help="retry failed or partial sources from the latest daily run")
+    retry.add_argument("--since", default=None)
+    retry.add_argument("--budget-minutes", type=int, default=None)
+
+    enrich = sub.add_parser("enrich", help="update long-lived wiki pages from stored evidence")
+    enrich.add_argument("--since", default=None)
+    enrich.add_argument("--budget-minutes", type=int, default=None)
+    enrich.add_argument("--top-n", type=int, default=None)
+
+    sub.add_parser("health", help="report wiki, state, duplicate, and lock health")
+
+    state = sub.add_parser("state", help="state maintenance")
+    state_sub = state.add_subparsers(dest="state_command", required=True)
+    state_sub.add_parser("vacuum", help="vacuum SQLite and clean stale locks")
+
     sub.add_parser("fetch", help="collect sources and update storage")
     sub.add_parser("rank", help="print ranked stored items")
     sub.add_parser("digest", help="write a digest from stored items")
@@ -153,16 +217,24 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _print_daily_result(prefix: str, result) -> None:
     print(f"{prefix} {result.status}: {result.digest_path}")
-    for title in result.top_titles[:5]:
-        print(f"- {title}")
+    _print_review_summary(result.review)
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
 
 
 def _print_fetch_result(result) -> None:
     print(f"Frontier Radar fetch {result.status}: {result.item_count} items")
+    _print_review_summary(result.review)
+    for error in result.errors:
+        print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _print_job_result(result) -> None:
+    print(f"{result.job_type} {result.status}: {result.item_count} new items")
     for source, count in sorted(result.counts.items()):
         print(f"- {source}: {count}")
+    for output in result.outputs:
+        print(f"- output: {output}")
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
 
@@ -172,6 +244,27 @@ def _read_chat_message() -> str:
         print("Ask Frontier Radar: ", end="", flush=True)
         return sys.stdin.readline().strip()
     return sys.stdin.read().strip()
+def _print_health_result(result) -> None:
+    print(f"health {result.status}")
+    for issue in result.issues:
+        print(f"- {issue}")
+    for lock in result.cleaned_locks:
+        print(f"- cleaned stale lock: {lock}")
+def _print_review_summary(review: RunReview) -> None:
+    print("Review summary:")
+    if review.outputs:
+        print(f"- Output: {', '.join(str(path) for path in review.outputs)}")
+    print(f"- Items: {review.item_count}")
+    print(f"- Changed: {review.new_items} new, {review.refreshed_items} refreshed")
+    if review.counts:
+        counts = ", ".join(f"{source}={count}" for source, count in sorted(review.counts.items()))
+        print(f"- Sources: {counts}")
+    print(f"- Why: {review.why}")
+    for item in review.top_items:
+        components = ", ".join(
+            f"{key}={value:.2f}" for key, value in sorted(item.components.items())
+        )
+        print(f"- Review: {item.title} (score {item.score:.2f}; {components})")
 
 
 def _check_sources(sources: dict) -> list[str]:

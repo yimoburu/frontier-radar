@@ -33,10 +33,19 @@ wiki work can speak closer to the user's current context.
 The intended daily run is 8:00 AM in America/Los_Angeles:
 
 ```bash
-frontier-radar daily
+frontier-radar daily --budget-minutes 20 --top-n 30
 ```
 
-See `docs/scheduling/` for cron, launchd, systemd, and Codex app notes.
+See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
+
+Reliability jobs:
+
+```bash
+frontier-radar retry-failed --since today --budget-minutes 10
+frontier-radar enrich --since 7d --budget-minutes 60 --top-n 100
+frontier-radar state vacuum
+frontier-radar health
+```
 
 ## Verification
 
@@ -46,4 +55,4 @@ frontier-radar wiki lint
 frontier-radar daily
 ```
 
-The daily reminder is configured as an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, Codex, Claude Code, or another harness.
+Daily agent automation is only an adapter over `frontier-radar daily`, so the project remains usable from cron, launchd, systemd, or any harness that can run the CLI.
