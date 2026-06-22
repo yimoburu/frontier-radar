@@ -2,12 +2,18 @@ from frontier_radar.models import NormalizedItem
 from frontier_radar.ranking import rank_items, score_item
 
 
-def item(title, summary, metrics, published_at="2026-06-22T15:00:00+00:00"):
+def item(
+    title,
+    summary,
+    metrics,
+    published_at="2026-06-22T15:00:00+00:00",
+    url=None,
+):
     return NormalizedItem(
         source="github",
         source_type="repo",
         title=title,
-        url=f"https://example.com/{title.replace(' ', '-')}",
+        url=url or f"https://example.com/{title.replace(' ', '-')}",
         author="owner",
         published_at=published_at,
         summary=summary,
@@ -45,3 +51,27 @@ def test_rank_items_returns_highest_scores_first():
     )
 
     assert ranked[0].item.title == "Agent Framework"
+
+
+def test_rank_items_uses_url_tiebreaker_for_equal_scores_and_titles():
+    topics = {"topics": {"agents": {"keywords": ["agent"]}}}
+    ranked = rank_items(
+        [
+            item(
+                "Agent Notes",
+                "AI agent framework",
+                {"stars": 100},
+                url="https://example.com/z",
+            ),
+            item(
+                "Agent Notes",
+                "AI agent framework",
+                {"stars": 100},
+                url="https://example.com/a",
+            ),
+        ],
+        topics,
+        now="2026-06-22T16:00:00+00:00",
+    )
+
+    assert ranked[0].item.url == "https://example.com/a"

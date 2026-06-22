@@ -75,7 +75,7 @@ def rank_items(
     limit: int | None = None,
 ) -> list[RankedItem]:
     ranked = [score_item(item, topics, now=now) for item in items]
-    ranked.sort(key=lambda scored: (-scored.score, scored.item.title))
+    ranked.sort(key=lambda scored: (-scored.score, scored.item.title, scored.item.url))
     if limit is None:
         return ranked
     return ranked[:limit]
