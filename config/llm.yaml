@@ -1,0 +1,15 @@
+# Optional LLM synthesis for daily wiki digests.
+#
+# To enable:
+#   1. Set enabled: true
+#   2. Set model to your provider's model name
+#   3. Export the API key named by api_key_env before running frontier-radar
+#
+# The provider uses an OpenAI-compatible /chat/completions endpoint.
+enabled: false
+provider: openai-compatible
+base_url: "https://api.openai.com/v1"
+model: ""
+api_key_env: FRONTIER_RADAR_LLM_API_KEY
+timeout_seconds: 30
+max_items: 12

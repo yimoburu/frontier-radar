@@ -1,6 +1,6 @@
 # Frontier Radar
 
-Frontier Radar is a local, harness-agnostic tracker for frontier AI signals. It stores raw source evidence, ranks what matters, and grows a Markdown knowledge wiki over time.
+Frontier Radar is a local, harness-agnostic tracker for frontier AI signals. It stores raw source evidence locally, ranks what matters, and grows a local Markdown knowledge wiki over time.
 
 ## Quickstart
 
@@ -32,9 +32,9 @@ Use the browser's Stop Server button, press `Ctrl-C` in the terminal, or run `fr
 
 ## Knowledge Layout
 
-- `raw/`: immutable source snapshots.
+- `raw/`: ignored local source snapshots.
 - `state/`: SQLite state and generated indexes.
-- `wiki/`: synthesized Markdown memory.
+- `wiki/`: ignored synthesized Markdown memory, with tracked `.gitkeep` placeholders for folder structure.
 - `AGENTS.md`: harness-neutral operating contract.
 
 ## Daily Schedule
@@ -44,6 +44,25 @@ The intended daily run is 8:00 AM in America/Los_Angeles:
 ```bash
 frontier-radar daily --budget-minutes 20 --top-n 30
 ```
+
+## LLM Synthesis
+
+LLM synthesis is opt-in. By default, Frontier Radar uses the deterministic ranking and
+Markdown rendering path, so frontier-radar daily works without an LLM key.
+
+Daily digests can optionally use an OpenAI-compatible LLM endpoint to write the
+`Intelligence Brief` from ranked source evidence. Edit `config/llm.yaml`, set
+`enabled: true`, set `model` to your provider's model name, and export the API key
+named by `api_key_env`:
+
+```bash
+export FRONTIER_RADAR_LLM_API_KEY="..."
+frontier-radar daily
+```
+
+The LLM prompt receives ranked item titles, summaries, scores, tags, URLs, and raw evidence
+paths. The renderer falls back to deterministic synthesis when LLM synthesis is disabled,
+not configured, or unavailable.
 
 See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
 
