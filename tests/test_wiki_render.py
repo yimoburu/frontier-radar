@@ -7,12 +7,16 @@ from frontier_radar.ranking import RankedItem
 from frontier_radar.wiki.render import render_daily_digest, write_daily_digest
 
 
-def ranked_item(title="Agent Framework", summary="A useful AI agent framework."):
+def ranked_item(
+    title="Agent Framework",
+    summary="A useful AI agent framework.",
+    url="https://github.com/example/agent-framework",
+):
     item = NormalizedItem(
         source="github",
         source_type="repo",
         title=title,
-        url="https://github.com/example/agent-framework",
+        url=url,
         author="example",
         published_at="2026-06-22T15:00:00+00:00",
         summary=summary,

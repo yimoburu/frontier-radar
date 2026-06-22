@@ -25,10 +25,11 @@ def render_daily_digest(
     if ranked_items:
         for entry in ranked_items[:10]:
             title = _markdown_link_text(entry.item.title)
+            url = _markdown_url(entry.item.url)
             source = _inline_text(entry.item.source)
             raw_path = _inline_text(entry.item.raw_path)
             lines.append(
-                f"- [{title}]({entry.item.url}) from {source} "
+                f"- [{title}]({url}) from {source} "
                 f"(score {entry.score:.2f}; raw: `{raw_path}`)"
             )
     else:
@@ -38,6 +39,7 @@ def render_daily_digest(
     for entry in ranked_items:
         title = _inline_text(entry.item.title)
         link_title = _markdown_link_text(entry.item.title)
+        url = _markdown_url(entry.item.url)
         source = _inline_text(entry.item.source)
         source_type = _inline_text(entry.item.source_type)
         author = _inline_text(entry.item.author)
@@ -52,7 +54,7 @@ def render_daily_digest(
                 f"### {title}",
                 "",
                 f"- Source: `{source}` / `{source_type}`",
-                f"- URL: [{link_title}]({entry.item.url}) (raw: `{raw_path}`)",
+                f"- URL: [{link_title}]({url}) (raw: `{raw_path}`)",
                 f"- Author: {author}",
                 f"- Published: {published_at}",
                 f"- Score: {entry.score:.2f} ({components})",
@@ -105,6 +107,10 @@ def _inline_text(value: str) -> str:
 
 def _markdown_link_text(value: str) -> str:
     return _inline_text(value).replace("[", r"\[").replace("]", r"\]")
+
+
+def _markdown_url(value: str) -> str:
+    return _inline_text(value).replace("(", "%28").replace(")", "%29")
 
 
 def _error_text(value: str) -> str:
