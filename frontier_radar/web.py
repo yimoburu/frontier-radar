@@ -5,6 +5,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+from threading import Thread
 from urllib.parse import parse_qs, urlparse
 
 from frontier_radar.chat import chat_once
@@ -48,6 +49,9 @@ class FrontierRadarHandler(BaseHTTPRequestHandler):
         params = self._read_params()
         if route.startswith("/api/actions/"):
             action = route.removeprefix("/api/actions/")
+            if action == "stop":
+                self._stop_server()
+                return
             self._run_json(lambda: _action_payload(self.server.root, action, params))
             return
         if route == "/api/chat":
@@ -68,6 +72,15 @@ class FrontierRadarHandler(BaseHTTPRequestHandler):
                 {"status": "error", "error": str(exc)},
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
             )
+
+    def _stop_server(self) -> None:
+        self._send_json(
+            {
+                "status": "ok",
+                "message": "Server is stopping. You can close this browser tab.",
+            }
+        )
+        Thread(target=self.server.shutdown, daemon=True).start()
 
     def _read_params(self) -> dict[str, str]:
         length = int(self.headers.get("Content-Length", "0") or "0")
@@ -346,6 +359,7 @@ def _render_dashboard(root: Path) -> str:
       cursor: pointer;
     }}
     button.secondary {{ background: #2f566f; }}
+    button.danger {{ background: #a83d32; }}
     code {{
       display: inline-block;
       max-width: 100%;
@@ -449,6 +463,9 @@ def _render_dashboard(root: Path) -> str:
         <form data-api="/api/actions/health">
           <button type="submit" class="secondary">Check Health</button>
         </form>
+        <form data-api="/api/actions/stop">
+          <button type="submit" class="danger">Stop Server</button>
+        </form>
       </div>
     </section>
     <section>
@@ -490,6 +507,7 @@ def _render_dashboard(root: Path) -> str:
       if (endpoint.includes("/digest")) return "Digest";
       if (endpoint.includes("/wiki-lint")) return "Wiki lint";
       if (endpoint.includes("/health")) return "Health check";
+      if (endpoint.includes("/stop")) return "Server stopped";
       if (endpoint.includes("/chat")) return "Wiki answer";
       return data.status ? "Action result" : "Result";
     }}
@@ -532,6 +550,7 @@ def _render_dashboard(root: Path) -> str:
       addList(lines, "Top", topItemsFrom(data));
       addList(lines, "Issues", data.issues);
       addList(lines, "Errors", data.errors);
+      addLine(lines, "Message", data.message);
       addLine(lines, "Why", data.review?.why);
 
       const summary = lines.length

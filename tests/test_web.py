@@ -31,6 +31,8 @@ def test_web_dashboard_exposes_local_actions(tmp_path):
     assert "formatResult" in body
     assert "Raw JSON" in body
     assert "Daily run" in body
+    assert "Stop Server" in body
+    assert "/api/actions/stop" in body
 
 
 def test_web_daily_action_returns_json_result(tmp_path, monkeypatch):
@@ -109,6 +111,30 @@ def test_web_rank_action_returns_json_result(tmp_path, monkeypatch):
     assert response.status == 200
     assert data["items"][0]["title"] == "ranked item"
     assert called == {"root": tmp_path.resolve(), "limit": 5}
+
+
+def test_web_stop_action_shuts_down_server(tmp_path):
+    server = create_server(tmp_path, host="127.0.0.1", port=0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        conn.request("POST", "/api/actions/stop", body="", headers=headers)
+        response = conn.getresponse()
+        data = json.loads(response.read().decode("utf-8"))
+        thread.join(timeout=5)
+    finally:
+        if thread.is_alive():
+            server.shutdown()
+            thread.join(timeout=5)
+        server.server_close()
+
+    assert response.status == 200
+    assert data["status"] == "ok"
+    assert "stopping" in data["message"]
+    assert not thread.is_alive()
 
 
 def test_cli_serve_invokes_local_web_service(monkeypatch, capsys):
