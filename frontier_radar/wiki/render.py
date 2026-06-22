@@ -35,6 +35,9 @@ def render_daily_digest(
     else:
         lines.append("- No items collected.")
 
+    lines.extend(["", "## Intelligence Brief", ""])
+    lines.extend(_intelligence_brief_lines(ranked_items))
+
     lines.extend(["", "## Top Repositories", ""])
     lines.extend(_compact_item_lines(_filter_items(ranked_items, source_type="repo")))
 
@@ -166,6 +169,61 @@ def _compact_item_lines(entries: list[RankedItem]) -> list[str]:
         raw_path = _inline_text(entry.item.raw_path)
         lines.append(f"- [{title}]({url}) (score {entry.score:.2f}; raw: `{raw_path}`)")
     return lines
+
+
+def _intelligence_brief_lines(ranked_items: list[RankedItem]) -> list[str]:
+    if not ranked_items:
+        return ["- No signals to synthesize yet."]
+
+    top = ranked_items[0]
+    top_title = _inline_text(top.item.title)
+    top_source = _inline_text(top.item.source)
+    top_raw = _inline_text(top.item.raw_path)
+    top_summary = _inline_text(top.item.summary)
+    lines = [
+        f"- Lead signal: {top_title} from {top_source} is the highest-ranked item "
+        f"(score {top.score:.2f}): {top_summary}. Provenance: `{top_raw}`"
+    ]
+
+    repeated = _repeated_topic_signal(ranked_items)
+    if repeated is not None:
+        topic, entries = repeated
+        sources = ", ".join(sorted({_inline_text(entry.item.source) for entry in entries}))
+        examples = "; ".join(_inline_text(entry.item.title) for entry in entries[:3])
+        raw_path = _inline_text(entries[0].item.raw_path)
+        lines.append(
+            f"- Pattern: `{topic}` appears in {len(entries)} item(s) across {sources}; "
+            f"examples: {examples}. Provenance: `{raw_path}`"
+        )
+        lines.append(
+            f"- Follow-up: update `wiki/topics/{_slug(topic)}.md` with the cross-source "
+            f"synthesis and any contradictions to track. Provenance: `{raw_path}`"
+        )
+    else:
+        page = _suggested_page(top)
+        lines.append(
+            f"- Follow-up: update `{page}` with the new evidence and what changed. "
+            f"Provenance: `{top_raw}`"
+        )
+    return lines
+
+
+def _repeated_topic_signal(ranked_items: list[RankedItem]) -> tuple[str, list[RankedItem]] | None:
+    by_topic: dict[str, list[RankedItem]] = {}
+    for entry in ranked_items[:10]:
+        for tag in entry.item.tags:
+            topic = _inline_text(tag).casefold()
+            if not topic:
+                continue
+            by_topic.setdefault(topic, []).append(entry)
+    repeated = [
+        (topic, entries)
+        for topic, entries in by_topic.items()
+        if len(entries) > 1
+    ]
+    if not repeated:
+        return None
+    return sorted(repeated, key=lambda item: (-len(item[1]), item[0]))[0]
 
 
 def _emerging_topic_lines(ranked_items: list[RankedItem]) -> list[str]:
