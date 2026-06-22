@@ -155,8 +155,8 @@ The project provides portable scheduler examples:
 - cron for Unix-like systems.
 - launchd for macOS.
 - systemd timers for Linux.
-- Codex app automation as an optional adapter.
-- Claude Code or future harness instructions as optional adapters.
+- agent automation as an optional adapter.
+- harness-specific adapter notes that delegate to the shared contract.
 
 The requested daily schedule is 8:00 AM in `America/Los_Angeles`, preserving daylight saving behavior. The scheduled action should call the plain CLI command rather than a harness-specific workflow:
 
@@ -242,7 +242,7 @@ Phase 2 implements deterministic normalization, storage, ranking, and digest ren
 
 Phase 3 adds public collectors for GitHub, arXiv, Hacker News, YouTube RSS, curated RSS, and manual notes.
 
-Phase 4 adds wiki linting, scheduler examples, and the optional Codex daily automation.
+Phase 4 adds wiki linting, scheduler examples, and optional agent automation guidance.
 
 ## V1 Decisions
 

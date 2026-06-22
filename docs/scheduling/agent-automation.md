@@ -1,6 +1,6 @@
-# Codex App Automation
+# Agent Automation
 
-Codex automation is an adapter over the same command used by every scheduler:
+Any agent or automation harness should use the same command as every scheduler:
 
 ```bash
 frontier-radar daily
