@@ -68,7 +68,7 @@ def render_daily_digest(
     if errors:
         lines.extend(["", "## Errors", ""])
         for error in errors:
-            lines.append(f"- {error}")
+            lines.append(f"- {_error_text(error)}")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -105,3 +105,7 @@ def _inline_text(value: str) -> str:
 
 def _markdown_link_text(value: str) -> str:
     return _inline_text(value).replace("[", r"\[").replace("]", r"\]")
+
+
+def _error_text(value: str) -> str:
+    return _inline_text(value).replace("https://", "hxxps://").replace("http://", "hxxp://")

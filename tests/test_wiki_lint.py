@@ -41,3 +41,18 @@ def test_lint_wiki_accepts_digest_written_by_renderer(tmp_path):
 
     assert result.ok is True
     assert result.errors == []
+
+
+def test_lint_wiki_accepts_rendered_digest_with_url_error(tmp_path):
+    write_daily_digest(
+        tmp_path,
+        "2026-06-22",
+        [ranked_item()],
+        {"github": 1},
+        ["fetch failed for https://api.example.test/items"],
+    )
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is True
+    assert result.errors == []
