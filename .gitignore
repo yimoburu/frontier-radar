@@ -3,6 +3,7 @@
 __pycache__/
 *.egg-info/
 uv.lock
+raw/
 state/*.sqlite
 state/*.sqlite-*
 state/*.log
