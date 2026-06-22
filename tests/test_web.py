@@ -27,6 +27,10 @@ def test_web_dashboard_exposes_local_actions(tmp_path):
     assert "Run Daily" in body
     assert "/api/actions/daily" in body
     assert "/api/chat" in body
+    assert "frontier-radar serve" in body
+    assert "formatResult" in body
+    assert "Raw JSON" in body
+    assert "Daily run" in body
 
 
 def test_web_daily_action_returns_json_result(tmp_path, monkeypatch):

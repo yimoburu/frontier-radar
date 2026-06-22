@@ -346,11 +346,62 @@ def _render_dashboard(root: Path) -> str:
       cursor: pointer;
     }}
     button.secondary {{ background: #2f566f; }}
-    pre {{
+    code {{
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #eef1f5;
+      color: #20242c;
+    }}
+    .result-panel {{
       min-height: 180px;
+      padding: 14px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #dfe3ea;
+    }}
+    .result-heading {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }}
+    .result-heading h3 {{ margin: 0; font-size: 1.05rem; letter-spacing: 0; }}
+    .status-pill {{
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .8rem;
+      font-weight: 750;
+      text-transform: uppercase;
+      background: #dfe7f1;
+      color: #263442;
+    }}
+    .status-ok {{ background: #d9f2e8; color: #0b5d45; }}
+    .status-error {{ background: #ffe0df; color: #912018; }}
+    .status-partial, .status-locked {{ background: #fff0c2; color: #71510d; }}
+    .summary-list {{
+      display: grid;
+      gap: 7px;
+      margin: 0 0 12px;
+      padding: 0;
+      list-style: none;
+    }}
+    .summary-list li {{ line-height: 1.4; }}
+    .summary-list strong {{ color: #20242c; }}
+    .answer {{
+      margin: 0 0 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }}
+    .muted {{ color: #68717e; }}
+    details {{ margin-top: 12px; }}
+    summary {{ cursor: pointer; font-weight: 650; }}
+    details pre {{
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      padding: 14px;
+      padding: 12px;
       border-radius: 8px;
       background: #161a22;
       color: #e8edf6;
@@ -361,6 +412,9 @@ def _render_dashboard(root: Path) -> str:
       section {{ background: #1b2029; border-color: #303846; }}
       label {{ color: #c5ccd8; }}
       input, select, textarea {{ background: #11151b; color: #edf0f5; border-color: #485163; }}
+      code {{ background: #2a313d; color: #edf0f5; }}
+      .result-panel {{ background: #121821; border-color: #303846; }}
+      .summary-list strong {{ color: #edf0f5; }}
     }}
   </style>
 </head>
@@ -369,6 +423,7 @@ def _render_dashboard(root: Path) -> str:
     <header>
       <h1>Frontier Radar</h1>
       <p>{root_text}</p>
+      <p><code>frontier-radar serve</code></p>
     </header>
     <section>
       <h2>Pipeline</h2>
@@ -413,22 +468,102 @@ def _render_dashboard(root: Path) -> str:
     </section>
     <section>
       <h2>Result</h2>
-      <pre id="result">Ready.</pre>
+      <div id="result" class="result-panel"><p class="muted">Ready.</p></div>
     </section>
   </main>
   <script>
     const result = document.querySelector("#result");
+
+    function escapeHtml(value) {{
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }}
+
+    function titleFor(endpoint, data) {{
+      if (endpoint.includes("/daily")) return "Daily run";
+      if (endpoint.includes("/fetch")) return "Fetch";
+      if (endpoint.includes("/rank")) return "Ranked items";
+      if (endpoint.includes("/digest")) return "Digest";
+      if (endpoint.includes("/wiki-lint")) return "Wiki lint";
+      if (endpoint.includes("/health")) return "Health check";
+      if (endpoint.includes("/chat")) return "Wiki answer";
+      return data.status ? "Action result" : "Result";
+    }}
+
+    function addLine(lines, label, value) {{
+      if (value === undefined || value === null || value === "" || value === false) return;
+      lines.push(`<li><strong>${{escapeHtml(label)}}:</strong> ${{escapeHtml(value)}}</li>`);
+    }}
+
+    function addList(lines, label, values) {{
+      if (!Array.isArray(values) || values.length === 0) return;
+      lines.push(`<li><strong>${{escapeHtml(label)}}:</strong><ul>${{values.map((value) => `<li>${{escapeHtml(value)}}</li>`).join("")}}</ul></li>`);
+    }}
+
+    function addCounts(lines, counts) {{
+      if (!counts || Object.keys(counts).length === 0) return;
+      const text = Object.entries(counts).map(([key, value]) => `${{key}}=${{value}}`).join(", ");
+      addLine(lines, "Counts", text);
+    }}
+
+    function topItemsFrom(data) {{
+      if (Array.isArray(data.top_titles)) return data.top_titles;
+      if (Array.isArray(data.items)) return data.items.slice(0, 5).map((item) => item.title || item.url);
+      if (data.review && Array.isArray(data.review.top_items)) {{
+        return data.review.top_items.map((item) => item.title);
+      }}
+      if (Array.isArray(data.top_items)) return data.top_items.map((item) => item.title || item);
+      return [];
+    }}
+
+    function formatResult(data, endpoint) {{
+      const status = data.status || "ok";
+      const statusClass = `status-${{String(status).toLowerCase()}}`;
+      const lines = [];
+      addLine(lines, "Digest", data.digest_path);
+      addLine(lines, "Items", data.item_count ?? data.review?.item_count);
+      addLine(lines, "Changed", data.review ? `${{data.review.new_items}} new, ${{data.review.refreshed_items}} refreshed` : null);
+      addCounts(lines, data.counts || data.review?.counts);
+      addList(lines, "Outputs", data.review?.outputs);
+      addList(lines, "Top", topItemsFrom(data));
+      addList(lines, "Issues", data.issues);
+      addList(lines, "Errors", data.errors);
+      addLine(lines, "Why", data.review?.why);
+
+      const summary = lines.length
+        ? `<ul class="summary-list">${{lines.join("")}}</ul>`
+        : `<p class="muted">No extra details returned.</p>`;
+      const answer = data.reply ? `<p class="answer">${{escapeHtml(data.reply)}}</p>` : "";
+      const raw = escapeHtml(JSON.stringify(data, null, 2));
+      return `
+        <div class="result-heading">
+          <span class="status-pill ${{statusClass}}">${{escapeHtml(status)}}</span>
+          <h3>${{escapeHtml(titleFor(endpoint, data))}}</h3>
+        </div>
+        ${{answer}}
+        ${{summary}}
+        <details>
+          <summary>Raw JSON</summary>
+          <pre>${{raw}}</pre>
+        </details>
+      `;
+    }}
+
     for (const form of document.querySelectorAll("form[data-api]")) {{
       form.addEventListener("submit", async (event) => {{
         event.preventDefault();
-        result.textContent = "Running...";
+        result.innerHTML = `<p class="muted">Running...</p>`;
         const response = await fetch(form.dataset.api, {{
           method: "POST",
           body: new URLSearchParams(new FormData(form))
         }});
         const text = await response.text();
         try {{
-          result.textContent = JSON.stringify(JSON.parse(text), null, 2);
+          result.innerHTML = formatResult(JSON.parse(text), form.dataset.api);
         }} catch {{
           result.textContent = text;
         }}
