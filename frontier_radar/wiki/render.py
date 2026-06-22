@@ -59,7 +59,7 @@ def render_daily_digest(
                 f"- Published: {published_at}",
                 f"- Score: {entry.score:.2f} ({components})",
                 f"- Provenance: `{raw_path}`",
-                f"- Summary: {summary}",
+                f"- Summary: {summary} (raw: `{raw_path}`)",
                 "",
             ]
         )

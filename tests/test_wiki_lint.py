@@ -76,3 +76,18 @@ def test_lint_wiki_accepts_rendered_digest_with_sanitized_item_url(tmp_path):
     assert "path%29 - injected" in markdown
     assert result.ok is True
     assert result.errors == []
+
+
+def test_lint_wiki_accepts_rendered_digest_with_url_summary(tmp_path):
+    write_daily_digest(
+        tmp_path,
+        "2026-06-22",
+        [ranked_item(summary="See https://example.test/details")],
+        {"github": 1},
+        [],
+    )
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is True
+    assert result.errors == []
