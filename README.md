@@ -28,6 +28,10 @@ frontier-radar daily
 
 See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
 
+## Ranking Calibration
+
+Ranking combines freshness, momentum, topic relevance, novelty, and source weight. Tune `ranking_weights` in `config/topics.yaml` when the default ordering drifts from the real trend you want to track. Higher weights make that component matter more; invalid or missing weights fall back to the built-in defaults.
+
 ## Verification
 
 ```bash
