@@ -120,7 +120,7 @@ def test_lint_wiki_flags_missing_provenance_path(tmp_path):
     daily.mkdir(parents=True)
     (daily / "2026-06-22.md").write_text(
         "- [Agent Framework](https://github.com/example/agent-framework) "
-        "(raw: `raw/2026-06-22/github/missing.json`)\n",
+        "(Provenance: `wiki/evidence/missing.md`)\n",
         encoding="utf-8",
     )
 
@@ -128,6 +128,21 @@ def test_lint_wiki_flags_missing_provenance_path(tmp_path):
 
     assert result.ok is False
     assert "missing provenance path" in result.errors[0]
+
+
+def test_lint_wiki_accepts_missing_raw_snapshot_provenance(tmp_path):
+    daily = tmp_path / "wiki" / "daily"
+    daily.mkdir(parents=True)
+    (daily / "2026-06-22.md").write_text(
+        "- [Agent Framework](https://github.com/example/agent-framework) "
+        "(raw: `raw/2026-06-22/github/missing.json`)\n",
+        encoding="utf-8",
+    )
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is True
+    assert result.errors == []
 
 
 def test_lint_wiki_flags_invalid_daily_filename(tmp_path):
