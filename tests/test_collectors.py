@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 
 from frontier_radar.collectors.github import collect_github, parse_github_search
-from frontier_radar.collectors.hn import parse_hn_search
+from frontier_radar.collectors.arxiv import collect_arxiv
+from frontier_radar.collectors.hn import collect_hn, parse_hn_search
 from frontier_radar.collectors.rss import collect_rss, parse_feed
 from frontier_radar.collectors.manual import collect_manual_notes
 from frontier_radar.raw import RawStore
@@ -210,3 +211,73 @@ def test_collect_github_records_query_errors_and_continues(tmp_path, monkeypatch
     assert [item.title for item in items] == ["example/agent-framework"]
     assert len(errors) == 1
     assert errors[0].startswith("github query bad-query:")
+
+
+def test_collect_hn_records_query_errors_and_continues(tmp_path, monkeypatch):
+    valid_payload = b'''{
+        "hits": [
+            {
+                "title": "Later valid discussion",
+                "url": "https://example.com/later",
+                "author": "alice",
+                "created_at": "2026-06-22T12:00:00Z",
+                "points": 42,
+                "num_comments": 7,
+                "objectID": "123"
+            }
+        ]
+    }'''
+
+    def fake_fetch_bytes(url):
+        if "bad-query" in url:
+            return b"{"
+        return valid_payload
+
+    monkeypatch.setattr("frontier_radar.collectors.hn.fetch_bytes", fake_fetch_bytes)
+    errors = []
+
+    items = collect_hn(
+        {"queries": ["bad-query", "good-query"], "per_query": 1},
+        RawStore(tmp_path),
+        now="2026-06-22T15:00:00+00:00",
+        errors=errors,
+    )
+
+    assert [item.title for item in items] == ["Later valid discussion"]
+    assert items[0].source == "hn"
+    assert len(errors) == 1
+    assert errors[0].startswith("hn query bad-query:")
+
+
+def test_collect_arxiv_records_query_errors_and_continues(tmp_path, monkeypatch):
+    valid_xml = b'''<?xml version="1.0"?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <title>arXiv Query</title>
+      <entry>
+        <title>Later valid paper</title>
+        <link href="https://arxiv.org/abs/2606.12345"/>
+        <author><name>Example Researcher</name></author>
+        <updated>2026-06-22T12:00:00Z</updated>
+        <summary>Recovered after a bad arXiv query.</summary>
+      </entry>
+    </feed>'''
+
+    def fake_fetch_bytes(url):
+        if "bad-query" in url:
+            return b"<feed>"
+        return valid_xml
+
+    monkeypatch.setattr("frontier_radar.collectors.arxiv.fetch_bytes", fake_fetch_bytes)
+    errors = []
+
+    items = collect_arxiv(
+        {"queries": ["bad-query", "good-query"], "per_query": 1},
+        RawStore(tmp_path),
+        now="2026-06-22T15:00:00+00:00",
+        errors=errors,
+    )
+
+    assert [item.title for item in items] == ["Later valid paper"]
+    assert items[0].source_type == "paper"
+    assert len(errors) == 1
+    assert errors[0].startswith("arxiv query bad-query:")
