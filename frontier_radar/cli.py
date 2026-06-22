@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
-from frontier_radar.daily import fetch_once, run_daily, utc_now_iso
+from frontier_radar.daily import ReviewItem, RunReview, fetch_once, run_daily, utc_now_iso
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
 from frontier_radar.wiki.lint import lint_wiki
@@ -66,6 +66,24 @@ def main(argv: list[str] | None = None) -> int:
                 latest_run["errors"],
             )
             print(f"Wrote {path}")
+            _print_review_summary(
+                RunReview(
+                    item_count=len(ranked),
+                    new_items=0,
+                    refreshed_items=0,
+                    counts=latest_run["counts"],
+                    outputs=[path],
+                    why="rendered stored items ranked by freshness, momentum, relevance, novelty, source_weight",
+                    top_items=[
+                        ReviewItem(
+                            title=entry.item.title,
+                            score=entry.score,
+                            components=dict(entry.components),
+                        )
+                        for entry in ranked[:5]
+                    ],
+                )
+            )
             return 0
 
         if args.command == "sources":
@@ -124,18 +142,33 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _print_daily_result(prefix: str, result) -> None:
     print(f"{prefix} {result.status}: {result.digest_path}")
-    for title in result.top_titles[:5]:
-        print(f"- {title}")
+    _print_review_summary(result.review)
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
 
 
 def _print_fetch_result(result) -> None:
     print(f"Frontier Radar fetch {result.status}: {result.item_count} items")
-    for source, count in sorted(result.counts.items()):
-        print(f"- {source}: {count}")
+    _print_review_summary(result.review)
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _print_review_summary(review: RunReview) -> None:
+    print("Review summary:")
+    if review.outputs:
+        print(f"- Output: {', '.join(str(path) for path in review.outputs)}")
+    print(f"- Items: {review.item_count}")
+    print(f"- Changed: {review.new_items} new, {review.refreshed_items} refreshed")
+    if review.counts:
+        counts = ", ".join(f"{source}={count}" for source, count in sorted(review.counts.items()))
+        print(f"- Sources: {counts}")
+    print(f"- Why: {review.why}")
+    for item in review.top_items:
+        components = ", ".join(
+            f"{key}={value:.2f}" for key, value in sorted(item.components.items())
+        )
+        print(f"- Review: {item.title} (score {item.score:.2f}; {components})")
 
 
 def _check_sources(sources: dict) -> list[str]:
