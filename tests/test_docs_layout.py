@@ -1,23 +1,47 @@
 from pathlib import Path
+import subprocess
 
 
-def test_wiki_seed_layout_exists():
+def test_local_data_layout_keeps_only_tracked_placeholders():
     root = Path(__file__).resolve().parents[1]
     for relative in [
-        "wiki/index.md",
-        "wiki/log.md",
-        "wiki/sources.md",
         "wiki/daily/.gitkeep",
         "wiki/topics/.gitkeep",
         "wiki/entities/.gitkeep",
         "wiki/repos/.gitkeep",
         "wiki/papers/.gitkeep",
         "wiki/claims/.gitkeep",
-        "raw/.gitkeep",
         "state/.gitkeep",
         "manual/.gitkeep",
     ]:
         assert (root / relative).exists(), relative
+
+    tracked = subprocess.run(
+        ["git", "ls-files", "raw", "wiki"],
+        cwd=root,
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.splitlines()
+
+    assert tracked == [
+        "wiki/claims/.gitkeep",
+        "wiki/daily/.gitkeep",
+        "wiki/entities/.gitkeep",
+        "wiki/papers/.gitkeep",
+        "wiki/repos/.gitkeep",
+        "wiki/topics/.gitkeep",
+    ]
+
+    ignored = subprocess.run(
+        ["git", "check-ignore", "raw/example.json", "wiki/index.md", "wiki/daily/2026-06-22.md"],
+        cwd=root,
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.splitlines()
+
+    assert ignored == ["raw/example.json", "wiki/index.md", "wiki/daily/2026-06-22.md"]
 
 
 def test_scheduler_docs_are_harness_agnostic():
