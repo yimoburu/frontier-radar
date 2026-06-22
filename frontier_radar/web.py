@@ -125,7 +125,7 @@ def create_server(
 
 def serve(root: Path, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> int:
     server = create_server(root, host=host, port=port)
-    address = f"http://{server.server_name}:{server.server_port}/"
+    address = _server_url(host, server.server_port)
     print(f"Frontier Radar web service listening on {address}")
     try:
         server.serve_forever()
@@ -134,6 +134,13 @@ def serve(root: Path, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> int
     finally:
         server.server_close()
     return 0
+
+
+def _server_url(host: str, port: int) -> str:
+    display_host = host
+    if ":" in display_host and not display_host.startswith("["):
+        display_host = f"[{display_host}]"
+    return f"http://{display_host}:{port}/"
 
 
 def stop(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, timeout: int = 5) -> int:

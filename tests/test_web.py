@@ -4,7 +4,7 @@ from threading import Thread
 
 from frontier_radar.cli import main
 from frontier_radar.daily import DailyResult, ReviewItem, RunReview
-from frontier_radar.web import create_server
+from frontier_radar.web import create_server, serve
 
 
 def test_web_dashboard_exposes_local_actions(tmp_path):
@@ -186,3 +186,24 @@ def test_cli_serve_invokes_local_web_service(monkeypatch, capsys):
     assert called["root"].name == "st"
     assert called["host"] == "127.0.0.1"
     assert called["port"] == 8766
+
+
+def test_serve_prints_browser_friendly_bind_host(tmp_path, monkeypatch, capsys):
+    class FakeServer:
+        server_name = "1.0.0.127.in-addr.arpa"
+        server_port = 8765
+
+        def serve_forever(self):
+            raise KeyboardInterrupt()
+
+        def server_close(self):
+            pass
+
+    monkeypatch.setattr("frontier_radar.web.create_server", lambda root, host, port: FakeServer())
+
+    exit_code = serve(tmp_path, host="127.0.0.1", port=8765)
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "http://127.0.0.1:8765/" in captured.out
+    assert "1.0.0.127.in-addr.arpa" not in captured.out
