@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 from urllib.parse import urlencode
 
+from frontier_radar.chat import chat_once
 from frontier_radar.collectors.base import fetch_bytes
 from frontier_radar.config import load_app_config
 from frontier_radar.daily import fetch_once, run_daily, utc_now_iso
@@ -68,6 +69,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {path}")
             return 0
 
+        if args.command == "chat":
+            message = args.message or _read_chat_message()
+            result = chat_once(
+                root,
+                message,
+                user_level=args.level,
+                save=not args.no_save,
+            )
+            print(result.reply)
+            if result.transcript_path:
+                print(f"\nSaved chat: {result.transcript_path}")
+            if result.profile_path:
+                print(f"Updated profile: {result.profile_path}")
+            return 0
+
         if args.command == "sources":
             config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
             if args.sources_command == "list":
@@ -110,6 +126,19 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("rank", help="print ranked stored items")
     sub.add_parser("digest", help="write a digest from stored items")
 
+    chat = sub.add_parser("chat", help="ask the wiki a question")
+    chat.add_argument("-m", "--message", help="question or topic to ask about")
+    chat.add_argument(
+        "--level",
+        choices=["beginner", "intermediate", "expert"],
+        help="preferred explanation level",
+    )
+    chat.add_argument(
+        "--no-save",
+        action="store_true",
+        help="do not write a chat transcript or update the user profile",
+    )
+
     sources = sub.add_parser("sources", help="inspect source configuration")
     sources_sub = sources.add_subparsers(dest="sources_command", required=True)
     sources_sub.add_parser("list", help="list configured sources")
@@ -136,6 +165,13 @@ def _print_fetch_result(result) -> None:
         print(f"- {source}: {count}")
     for error in result.errors:
         print(f"ERROR: {error}", file=sys.stderr)
+
+
+def _read_chat_message() -> str:
+    if sys.stdin.isatty():
+        print("Ask Frontier Radar: ", end="", flush=True)
+        return sys.stdin.readline().strip()
+    return sys.stdin.read().strip()
 
 
 def _check_sources(sources: dict) -> list[str]:

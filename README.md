@@ -11,6 +11,16 @@ python -m pip install -e ".[test]"
 frontier-radar daily
 ```
 
+Ask the wiki a question in a one-shot chat:
+
+```bash
+frontier-radar chat --message "I'm new to this. What are AI agents?"
+```
+
+The chat command answers from matching wiki pages, records a transcript under `wiki/chats/`,
+and updates `wiki/user-profile.md` with explanation-level and interest signals so future
+wiki work can speak closer to the user's current context.
+
 ## Knowledge Layout
 
 - `raw/`: immutable source snapshots.
