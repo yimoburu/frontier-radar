@@ -137,6 +137,36 @@ def test_web_stop_action_shuts_down_server(tmp_path):
     assert not thread.is_alive()
 
 
+def test_cli_serve_stop_shuts_down_server(tmp_path, capsys):
+    server = create_server(tmp_path, host="127.0.0.1", port=0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        exit_code = main(
+            [
+                "serve",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(server.server_port),
+                "--stop",
+            ]
+        )
+        thread.join(timeout=5)
+    finally:
+        if thread.is_alive():
+            server.shutdown()
+            thread.join(timeout=5)
+        server.server_close()
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Server is stopping" in captured.out
+    assert captured.err == ""
+    assert not thread.is_alive()
+
+
 def test_cli_serve_invokes_local_web_service(monkeypatch, capsys):
     called = {}
 

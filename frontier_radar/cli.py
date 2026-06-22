@@ -13,6 +13,7 @@ from frontier_radar.daily import ReviewItem, RunReview, fetch_once, run_daily, u
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
 from frontier_radar.web import serve as serve_web
+from frontier_radar.web import stop as stop_web
 from frontier_radar.wiki.lint import lint_wiki
 from frontier_radar.wiki.render import write_daily_digest
 
@@ -132,6 +133,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "serve":
+            if args.stop:
+                return stop_web(args.host, args.port)
             return serve_web(root, args.host, args.port)
 
         if args.command == "sources":
@@ -210,6 +213,7 @@ def _build_parser() -> argparse.ArgumentParser:
     serve = sub.add_parser("serve", help="start the local web service")
     serve.add_argument("--host", default="127.0.0.1", help="interface to bind")
     serve.add_argument("--port", type=int, default=8765, help="port to listen on")
+    serve.add_argument("--stop", action="store_true", help="stop the local web service")
 
     sources = sub.add_parser("sources", help="inspect source configuration")
     sources_sub = sources.add_subparsers(dest="sources_command", required=True)

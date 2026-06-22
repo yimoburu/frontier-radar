@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from html import escape
+import http.client
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+import sys
 from threading import Thread
 from urllib.parse import parse_qs, urlparse
 
@@ -132,6 +134,38 @@ def serve(root: Path, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> int
     finally:
         server.server_close()
     return 0
+
+
+def stop(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, timeout: int = 5) -> int:
+    try:
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        conn.request(
+            "POST",
+            "/api/actions/stop",
+            body="",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = conn.getresponse()
+        body = response.read().decode("utf-8")
+    except OSError as exc:
+        print(
+            f"ERROR: could not reach Frontier Radar web service at http://{host}:{port}/ ({exc})",
+            file=sys.stderr,
+        )
+        return 1
+    finally:
+        try:
+            conn.close()
+        except UnboundLocalError:
+            pass
+
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        data = {"status": "error", "message": body}
+    message = data.get("message") or body or response.reason
+    print(message)
+    return 0 if response.status == HTTPStatus.OK and data.get("status") == "ok" else 1
 
 
 def _action_payload(root: Path, action: str, params: dict[str, str]) -> dict:
