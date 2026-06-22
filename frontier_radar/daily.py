@@ -246,6 +246,14 @@ def run_daily(
                 counts={},
                 errors=errors,
                 top_titles=[],
+                review=_build_review(
+                    items=[],
+                    counts={},
+                    seen_item_ids=set(),
+                    outputs=[],
+                    ranked=[],
+                    why="skipped because an active pipeline lock prevents daily run",
+                ),
             )
 
     try:
@@ -396,6 +404,9 @@ def _error_matches_source(error: str, source: str) -> bool:
         or error.startswith(f"{source} query")
         or error.startswith(f"{source} feed")
         or error.startswith(f"{source} note")
+    )
+
+
 def _build_review(
     items: list[NormalizedItem],
     counts: dict[str, int],

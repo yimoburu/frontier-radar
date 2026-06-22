@@ -1,5 +1,5 @@
 from frontier_radar.cli import main
-from frontier_radar.daily import DailyResult
+from frontier_radar.daily import DailyResult, ReviewItem, RunReview
 from frontier_radar.jobs import HealthResult, JobResult, VacuumResult
 
 
@@ -224,7 +224,14 @@ def test_cli_daily_flags_override_job_defaults(monkeypatch, capsys):
     def fake_run_daily(root, budget_minutes=None, top_n=None):
         captured_args["budget_minutes"] = budget_minutes
         captured_args["top_n"] = top_n
-        return DailyResult("ok", "wiki/daily/2026-06-22.md", {}, [], ["top item"])
+        return DailyResult(
+            "ok",
+            "wiki/daily/2026-06-22.md",
+            {},
+            [],
+            ["top item"],
+            RunReview(1, 1, 0, {}, [], "test daily override", [ReviewItem("top item", 1.0, {})]),
+        )
 
     monkeypatch.setattr("frontier_radar.cli.run_daily", fake_run_daily)
 
