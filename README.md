@@ -23,14 +23,19 @@ frontier-radar daily
 The intended daily run is 8:00 AM in America/Los_Angeles:
 
 ```bash
-frontier-radar daily
+frontier-radar daily --budget-minutes 20 --top-n 30
 ```
 
 See `docs/scheduling/` for cron, launchd, systemd, and agent automation notes.
 
-## Ranking Calibration
+Reliability jobs:
 
-Ranking combines freshness, momentum, topic relevance, novelty, and source weight. Tune `ranking_weights` in `config/topics.yaml` when the default ordering drifts from the real trend you want to track. Higher weights make that component matter more; invalid or missing weights fall back to the built-in defaults.
+```bash
+frontier-radar retry-failed --since today --budget-minutes 10
+frontier-radar enrich --since 7d --budget-minutes 60 --top-n 100
+frontier-radar state vacuum
+frontier-radar health
+```
 
 ## Verification
 

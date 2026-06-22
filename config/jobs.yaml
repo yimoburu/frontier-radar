@@ -1,0 +1,34 @@
+daily:
+  budget_minutes: 20
+  top_n: 30
+  max_deep_reads: 15
+  partial_digest: true
+  prevent_overlapping_runs: true
+  stale_run_after_minutes: 60
+  terminal_summary_items: 5
+
+retry_failed:
+  enabled: true
+  budget_minutes: 10
+  retry_window: today
+  max_attempts_per_source: 2
+  update_daily_digest: true
+
+enrich:
+  enabled: true
+  budget_minutes: 60
+  since: 7d
+  top_n: 100
+  update_topic_pages: true
+  update_entity_pages: true
+  update_claim_pages: true
+  require_provenance_links: true
+
+maintenance:
+  enabled: true
+  lint_wiki: true
+  check_provenance: true
+  check_broken_links: true
+  check_duplicate_items: true
+  vacuum_state: true
+  stale_lock_after_minutes: 120

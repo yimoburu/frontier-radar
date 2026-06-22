@@ -18,6 +18,10 @@ Example `~/Library/LaunchAgents/com.local.frontier-radar.plist`:
   <array>
     <string>/Users/xwli/Documents/st/.venv/bin/frontier-radar</string>
     <string>daily</string>
+    <string>--budget-minutes</string>
+    <string>20</string>
+    <string>--top-n</string>
+    <string>30</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
@@ -35,3 +39,11 @@ Example `~/Library/LaunchAgents/com.local.frontier-radar.plist`:
 ```
 
 launchd uses the Mac's configured timezone. Keep the machine timezone on Pacific time if daylight-saving-aware 8:00 AM Pacific behavior is required.
+
+Create separate launchd jobs for purpose-specific follow-up work instead of scheduling `fetch`, `rank`, and `digest` separately:
+
+```bash
+/Users/xwli/Documents/st/.venv/bin/frontier-radar retry-failed --since today --budget-minutes 10
+/Users/xwli/Documents/st/.venv/bin/frontier-radar enrich --since 7d --budget-minutes 60 --top-n 100
+/Users/xwli/Documents/st/.venv/bin/frontier-radar health
+```
