@@ -6,7 +6,10 @@ from frontier_radar.models import NormalizedItem
 
 
 def collect_manual_notes(root: Path, directory: str) -> list[NormalizedItem]:
-    base = root / directory
+    root = root.resolve()
+    base = (root / directory).resolve()
+    if base != root and root not in base.parents:
+        raise ValueError(f"unsafe manual notes directory: {directory!r}")
     if not base.exists():
         return []
     items: list[NormalizedItem] = []

@@ -14,13 +14,23 @@ def text(node: ET.Element | None, default: str = "") -> str:
     return "".join(node.itertext()).strip() if node is not None else default
 
 
+def atom_link(entry: ET.Element) -> str:
+    links = [link for link in entry.findall(f"{ATOM}link") if link.attrib.get("href")]
+    for link in links:
+        if link.attrib.get("rel") == "alternate":
+            return link.attrib["href"]
+    for link in links:
+        if link.attrib.get("rel") != "self":
+            return link.attrib["href"]
+    return links[0].attrib["href"] if links else ""
+
+
 def parse_feed(xml: bytes, source: str, source_name: str, raw_path: str) -> list[NormalizedItem]:
     root = ET.fromstring(xml)
     items: list[NormalizedItem] = []
     if root.tag == f"{ATOM}feed":
         for entry in root.findall(f"{ATOM}entry"):
-            link_node = entry.find(f"{ATOM}link")
-            link = link_node.attrib.get("href", "") if link_node is not None else ""
+            link = atom_link(entry)
             author = text(entry.find(f"{ATOM}author/{ATOM}name"), source_name)
             items.append(
                 NormalizedItem(
@@ -60,7 +70,10 @@ def parse_feed(xml: bytes, source: str, source_name: str, raw_path: str) -> list
 def collect_rss(config: dict, raw_store: RawStore, now: str, source: str = "rss") -> list[NormalizedItem]:
     results: list[NormalizedItem] = []
     for feed in config.get("feeds", []):
-        xml = fetch_bytes(feed["url"])
-        raw_path = raw_store.write_snapshot(source, "xml", xml, now=now)
-        results.extend(parse_feed(xml, source=source, source_name=feed["name"], raw_path=str(raw_path)))
+        try:
+            xml = fetch_bytes(feed["url"])
+            raw_path = raw_store.write_snapshot(source, "xml", xml, now=now)
+            results.extend(parse_feed(xml, source=source, source_name=feed["name"], raw_path=str(raw_path)))
+        except Exception:
+            continue
     return results

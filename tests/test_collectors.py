@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
+
 from frontier_radar.collectors.github import parse_github_search
 from frontier_radar.collectors.hn import parse_hn_search
-from frontier_radar.collectors.rss import parse_feed
+from frontier_radar.collectors.rss import collect_rss, parse_feed
 from frontier_radar.collectors.manual import collect_manual_notes
+from frontier_radar.raw import RawStore
 
 
 def test_parse_github_search_normalizes_repo_items():
@@ -71,6 +74,25 @@ def test_parse_feed_handles_atom_entries():
     assert items[0].author == "Example Lab"
 
 
+def test_parse_feed_prefers_atom_alternate_link_over_self_link():
+    xml = b'''<?xml version="1.0"?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <title>Example Feed</title>
+      <entry>
+        <title>New model release</title>
+        <link rel="self" href="https://example.com/feed-entry.xml"/>
+        <link rel="alternate" href="https://example.com/model"/>
+        <author><name>Example Lab</name></author>
+        <updated>2026-06-22T12:00:00Z</updated>
+        <summary>Frontier model release notes.</summary>
+      </entry>
+    </feed>'''
+
+    items = parse_feed(xml, source="rss", source_name="Example Feed", raw_path="raw/feed.xml")
+
+    assert items[0].url == "https://example.com/model"
+
+
 def test_collect_manual_notes_reads_markdown_links(tmp_path):
     manual = tmp_path / "manual"
     manual.mkdir()
@@ -84,3 +106,46 @@ def test_collect_manual_notes_reads_markdown_links(tmp_path):
     assert items[0].source == "manual"
     assert items[0].source_type == "expert-note"
     assert "LLM wiki memory" in items[0].summary
+
+
+def test_collect_manual_notes_rejects_directory_traversal(tmp_path):
+    outside = tmp_path.parent / "outside"
+    outside.mkdir(exist_ok=True)
+
+    with pytest.raises(ValueError):
+        collect_manual_notes(tmp_path, "../outside")
+
+
+def test_collect_rss_continues_after_malformed_feed(tmp_path, monkeypatch):
+    valid_xml = b'''<?xml version="1.0"?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <title>Example Feed</title>
+      <entry>
+        <title>Later valid item</title>
+        <link href="https://example.com/later"/>
+        <author><name>Example Lab</name></author>
+        <updated>2026-06-22T12:00:00Z</updated>
+        <summary>Recovered after a bad feed.</summary>
+      </entry>
+    </feed>'''
+
+    def fake_fetch_bytes(url):
+        if url == "https://example.com/bad.xml":
+            return b"<feed>"
+        return valid_xml
+
+    monkeypatch.setattr("frontier_radar.collectors.rss.fetch_bytes", fake_fetch_bytes)
+
+    items = collect_rss(
+        {
+            "feeds": [
+                {"name": "Bad Feed", "url": "https://example.com/bad.xml"},
+                {"name": "Good Feed", "url": "https://example.com/good.xml"},
+            ]
+        },
+        RawStore(tmp_path),
+        now="2026-06-22T15:00:00+00:00",
+    )
+
+    assert [item.title for item in items] == ["Later valid item"]
+    assert items[0].raw_path == "raw/2026-06-22/rss/20260622T150000Z-1.xml"
