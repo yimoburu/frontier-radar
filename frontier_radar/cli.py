@@ -12,6 +12,7 @@ from frontier_radar.jobs import run_enrich, run_health, run_retry_failed, run_st
 from frontier_radar.daily import ReviewItem, RunReview, fetch_once, run_daily, utc_now_iso
 from frontier_radar.ranking import rank_items
 from frontier_radar.storage import Database
+from frontier_radar.web import serve as serve_web
 from frontier_radar.wiki.lint import lint_wiki
 from frontier_radar.wiki.render import write_daily_digest
 
@@ -130,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Updated profile: {result.profile_path}")
             return 0
 
+        if args.command == "serve":
+            return serve_web(root, args.host, args.port)
+
         if args.command == "sources":
             config = load_app_config(root / "config" / "sources.yaml", root / "config" / "topics.yaml")
             if args.sources_command == "list":
@@ -202,6 +206,10 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="do not write a chat transcript or update the user profile",
     )
+
+    serve = sub.add_parser("serve", help="start the local web service")
+    serve.add_argument("--host", default="127.0.0.1", help="interface to bind")
+    serve.add_argument("--port", type=int, default=8765, help="port to listen on")
 
     sources = sub.add_parser("sources", help="inspect source configuration")
     sources_sub = sources.add_subparsers(dest="sources_command", required=True)
