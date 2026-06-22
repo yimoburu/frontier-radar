@@ -1,19 +1,21 @@
 from pathlib import Path
 
+import pytest
+
 from frontier_radar.models import NormalizedItem
 from frontier_radar.ranking import RankedItem
 from frontier_radar.wiki.render import render_daily_digest, write_daily_digest
 
 
-def ranked_item():
+def ranked_item(title="Agent Framework", summary="A useful AI agent framework."):
     item = NormalizedItem(
         source="github",
         source_type="repo",
-        title="Agent Framework",
+        title=title,
         url="https://github.com/example/agent-framework",
         author="example",
         published_at="2026-06-22T15:00:00+00:00",
-        summary="A useful AI agent framework.",
+        summary=summary,
         raw_path="raw/2026-06-22/github/item.json",
         tags=["agents"],
         metrics={"stars": 500},
@@ -51,3 +53,28 @@ def test_write_daily_digest_creates_expected_path(tmp_path):
 
     assert path == Path("wiki/daily/2026-06-22.md")
     assert (tmp_path / path).exists()
+
+
+@pytest.mark.parametrize("date", ["../../escape", "2026-6-22", "2026-06-22.md"])
+def test_write_daily_digest_rejects_invalid_dates(tmp_path, date):
+    with pytest.raises(ValueError):
+        write_daily_digest(tmp_path, date, [ranked_item()], {"github": 1}, [])
+
+
+def test_render_daily_digest_normalizes_markdown_fields():
+    markdown = render_daily_digest(
+        date="2026-06-22",
+        ranked_items=[
+            ranked_item(
+                title="Agent ](Injected)\n- injected title bullet",
+                summary="Useful summary.\n- injected summary bullet",
+            )
+        ],
+        counts={"github": 1},
+        errors=[],
+    )
+
+    assert "Agent \\](Injected) - injected title bullet" in markdown
+    assert "Useful summary. - injected summary bullet" in markdown
+    assert "\n- injected title bullet" not in markdown
+    assert "\n- injected summary bullet" not in markdown

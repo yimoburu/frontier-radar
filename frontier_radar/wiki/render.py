@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from datetime import date as calendar_date
 from pathlib import Path
+import re
 
 from frontier_radar.ranking import RankedItem
+
+
+DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def render_daily_digest(
@@ -19,29 +24,40 @@ def render_daily_digest(
     ]
     if ranked_items:
         for entry in ranked_items[:10]:
+            title = _markdown_link_text(entry.item.title)
+            source = _inline_text(entry.item.source)
+            raw_path = _inline_text(entry.item.raw_path)
             lines.append(
-                f"- [{entry.item.title}]({entry.item.url}) from {entry.item.source} "
-                f"(score {entry.score:.2f}; raw: `{entry.item.raw_path}`)"
+                f"- [{title}]({entry.item.url}) from {source} "
+                f"(score {entry.score:.2f}; raw: `{raw_path}`)"
             )
     else:
         lines.append("- No items collected.")
 
     lines.extend(["", "## Top Items", ""])
     for entry in ranked_items:
+        title = _inline_text(entry.item.title)
+        link_title = _markdown_link_text(entry.item.title)
+        source = _inline_text(entry.item.source)
+        source_type = _inline_text(entry.item.source_type)
+        author = _inline_text(entry.item.author)
+        published_at = _inline_text(entry.item.published_at)
+        raw_path = _inline_text(entry.item.raw_path)
+        summary = _inline_text(entry.item.summary)
         components = ", ".join(
             f"{key}={value:.2f}" for key, value in sorted(entry.components.items())
         )
         lines.extend(
             [
-                f"### {entry.item.title}",
+                f"### {title}",
                 "",
-                f"- Source: `{entry.item.source}` / `{entry.item.source_type}`",
-                f"- URL: {entry.item.url}",
-                f"- Author: {entry.item.author}",
-                f"- Published: {entry.item.published_at}",
+                f"- Source: `{source}` / `{source_type}`",
+                f"- URL: [{link_title}]({entry.item.url}) (raw: `{raw_path}`)",
+                f"- Author: {author}",
+                f"- Published: {published_at}",
                 f"- Score: {entry.score:.2f} ({components})",
-                f"- Provenance: `{entry.item.raw_path}`",
-                f"- Summary: {entry.item.summary}",
+                f"- Provenance: `{raw_path}`",
+                f"- Summary: {summary}",
                 "",
             ]
         )
@@ -63,6 +79,7 @@ def write_daily_digest(
     counts: dict[str, int],
     errors: list[str],
 ) -> Path:
+    _validate_date(date)
     relative = Path("wiki") / "daily" / f"{date}.md"
     absolute = root / relative
     absolute.parent.mkdir(parents=True, exist_ok=True)
@@ -71,3 +88,20 @@ def write_daily_digest(
         encoding="utf-8",
     )
     return relative
+
+
+def _validate_date(value: str) -> None:
+    if not DATE_PATTERN.fullmatch(value):
+        raise ValueError(f"date must be YYYY-MM-DD: {value!r}")
+    try:
+        calendar_date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"date must be YYYY-MM-DD: {value!r}") from exc
+
+
+def _inline_text(value: str) -> str:
+    return " ".join(str(value).split())
+
+
+def _markdown_link_text(value: str) -> str:
+    return _inline_text(value).replace("[", r"\[").replace("]", r"\]")

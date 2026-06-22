@@ -1,4 +1,7 @@
 from frontier_radar.wiki.lint import lint_wiki
+from frontier_radar.wiki.render import write_daily_digest
+
+from test_wiki_render import ranked_item
 
 
 def test_lint_wiki_accepts_digest_with_provenance(tmp_path):
@@ -29,3 +32,12 @@ def test_lint_wiki_flags_missing_provenance(tmp_path):
 
     assert result.ok is False
     assert "missing provenance" in result.errors[0]
+
+
+def test_lint_wiki_accepts_digest_written_by_renderer(tmp_path):
+    write_daily_digest(tmp_path, "2026-06-22", [ranked_item()], {"github": 1}, [])
+
+    result = lint_wiki(tmp_path)
+
+    assert result.ok is True
+    assert result.errors == []
